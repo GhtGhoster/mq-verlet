@@ -1,0 +1,17 @@
+[package]
+name = "mq-wbg-template"
+version = "0.1.0"
+edition = "2021"
+readme="README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["gamedev", "wasm", "web", "template", "github"]
+categories = ["game-development", "wasm", "web-programming"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+macroquad = "0.3.25"
+egui = "0.21.0"
+egui-macroquad = "0.15.0"
+rand = "0.8.5"
+getrandom = {version = "0.2.8", features = ["js"]}
