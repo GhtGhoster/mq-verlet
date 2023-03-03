@@ -1,7 +1,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>mq-wbg-template</title>
+        <title>mq-verlet</title>
         <style>
             html,
             body,
@@ -24,7 +24,7 @@
         <canvas id="glcanvas" tabindex='1'></canvas>
         <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
         <script src="./web_res/mq_js_bundle.js"></script><script type="module">
-            import init, { set_wasm } from "./web_res/mq-wbg-template.js";
+            import init, { set_wasm } from "./web_res/mq-verlet.js";
 
             async function run() {
                 let wbg = await init();
@@ -36,7 +36,7 @@
                     name: "wbg",
                 });
 
-                load("./web_res/mq-wbg-template.wasm");
+                load("./web_res/mq-verlet.wasm");
             }
 
             run();

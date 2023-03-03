@@ -1,5 +1,5 @@
 [package]
-name = "mq-wbg-template"
+name = "mq-verlet"
 version = "0.1.0"
 edition = "2021"
 readme="README.md"
