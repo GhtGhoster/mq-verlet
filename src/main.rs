@@ -21,7 +21,7 @@ async fn main() {
     let mut min_object_count: usize = 0;
     let mut ensure_min_object_count: bool = false;
     let mut max_object_count: usize = 1500;
-    let mut ensure_max_object_count: bool = false;
+    let mut ensure_max_object_count: bool = true;
 
     let fps: f64 = 60.0;
     let mut last_frame = get_time();
@@ -38,6 +38,27 @@ async fn main() {
             solver.update_with_substep(frame_time as f32, 8);
             last_frame = now;
             max_frame_time = frame_time;
+        }
+
+        if ensure_min_object_count {
+            while solver.verlet_objects.len() < min_object_count {
+                let pos: Vec2 = Vec2 {
+                    x: rng.gen_range(spawn_radius..screen_width()-spawn_radius),
+                    y: rng.gen_range(spawn_radius..screen_height()-spawn_radius),
+                };
+                let obj: VerletObject = VerletObject {
+                    position_current: pos.clone(),
+                    position_old: pos.clone(),
+                    acceleration: Vec2::zero(),
+                    radius: spawn_radius,
+                };
+                solver.push(obj);
+            }
+        }
+        if ensure_max_object_count {
+            while solver.verlet_objects.len() > max_object_count {
+                solver.remove(0);
+            }
         }
 
         // rendering
@@ -64,14 +85,14 @@ async fn main() {
                 acceleration: Vec2::zero(),
                 radius: spawn_radius,
             };
-            solver.verlet_objects.push(obj);
+            solver.push(obj);
         }
         if mouse_wheel().1 > 0.0 {
             let (x, y): (f32, f32) = mouse_position();
             let pos: Vec2 = Vec2 {x, y};
             for i in (0..solver.verlet_objects.len()).rev() {
                 if (solver.verlet_objects[i].position_current - pos).len() < solver.verlet_objects[i].radius {
-                    solver.verlet_objects.remove(i);
+                    solver.remove(i);
                 }
             }
         }
@@ -97,35 +118,15 @@ async fn main() {
                                 acceleration: Vec2::zero(),
                                 radius: spawn_radius,
                             };
-                            solver.verlet_objects.push(obj);
+                            solver.push(obj);
                         }
                     }
                     ui.add(egui::Slider::new(&mut min_object_count, 0..=2000).text("Minimum object count"));
                     ui.checkbox(&mut ensure_min_object_count, "Ensure min object count");
-                    if ensure_min_object_count {
-                        while solver.verlet_objects.len() < min_object_count {
-                            let pos: Vec2 = Vec2 {
-                                x: rng.gen_range(spawn_radius..screen_width()-spawn_radius),
-                                y: rng.gen_range(spawn_radius..screen_height()-spawn_radius),
-                            };
-                            let obj: VerletObject = VerletObject {
-                                position_current: pos.clone(),
-                                position_old: pos.clone(),
-                                acceleration: Vec2::zero(),
-                                radius: spawn_radius,
-                            };
-                            solver.verlet_objects.push(obj);
-                        }
-                    }
                     ui.add(egui::Slider::new(&mut max_object_count, 0..=2000).text("Maximum object count"));
                     ui.checkbox(&mut ensure_max_object_count, "Ensure max object count");
-                    if ensure_max_object_count {
-                        while solver.verlet_objects.len() > max_object_count {
-                            solver.verlet_objects.pop();
-                        }
-                    }
                     if ui.button("Clear").clicked() {
-                        solver.verlet_objects.clear();
+                        solver.clear();
                     }
                 }
             );

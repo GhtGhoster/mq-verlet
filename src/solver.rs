@@ -18,6 +18,18 @@ impl Solver {
         }
     }
 
+    pub fn push(&mut self, obj: VerletObject) {
+        self.verlet_objects.push(obj);
+    }
+
+    pub fn remove(&mut self, obj_index: usize) {
+        self.verlet_objects.remove(obj_index);
+    }
+
+    pub fn clear(&mut self) {
+        self.verlet_objects.clear();
+    }
+
     pub fn update_with_substep(&mut self, dt: f32, substebs: usize) {
         let sub_dt: f32 = dt / substebs as f32;
         for _ in 0..substebs {
