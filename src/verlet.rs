@@ -1,5 +1,6 @@
 
 use crate::vector::Vec2;
+use ::rand::{thread_rng, Rng};
 
 pub struct VerletObject {
     pub position_current: Vec2,
@@ -14,7 +15,7 @@ impl VerletObject {
             position_current: Vec2 {x, y},
             position_old: Vec2 {x, y},
             acceleration: Vec2::zero(),
-            radius: 50.0,
+            radius: thread_rng().gen_range(10.0..=50.0),
         }
     }
 

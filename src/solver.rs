@@ -18,11 +18,19 @@ impl Solver {
         }
     }
 
+    pub fn update_with_substep(&mut self, dt: f32, substebs: usize) {
+        let sub_dt: f32 = dt / substebs as f32;
+        for _ in 0..substebs {
+            self.update(sub_dt);
+        }
+    }
+
     pub fn update(&mut self, dt: f32) {
         self.apply_gravity();
         self.apply_constraint();
         self.solve_collisions();
         self.update_positions(dt);
+        self.remove_oob_objs();
     }
 
     pub fn update_positions(&mut self, dt: f32) {
@@ -64,6 +72,14 @@ impl Solver {
                     self.verlet_objects[i].position_current += n * 0.5 * delta;
                     self.verlet_objects[k].position_current -= n * 0.5 * delta;
                 }
+            }
+        }
+    }
+
+    pub fn remove_oob_objs(&mut self) {
+        for i in (0..self.verlet_objects.len()).rev() {
+            if self.verlet_objects[i].position_old.x.is_nan() || self.verlet_objects[i].position_old.y.is_nan() {
+                self.verlet_objects.remove(i);
             }
         }
     }
