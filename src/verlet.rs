@@ -1,6 +1,5 @@
 
 use crate::vector::Vec2;
-use ::rand::{thread_rng, Rng};
 
 pub struct VerletObject {
     pub position_current: Vec2,
@@ -10,15 +9,6 @@ pub struct VerletObject {
 }
 
 impl VerletObject {
-    pub fn new(x: f32, y: f32) -> Self {
-        Self {
-            position_current: Vec2 {x, y},
-            position_old: Vec2 {x, y},
-            acceleration: Vec2::zero(),
-            radius: thread_rng().gen_range(10.0..=50.0),
-        }
-    }
-
     pub fn update_position(&mut self, dt: f32) {
         let velocity = self.position_current - self.position_old;
         self.position_old = self.position_current;
