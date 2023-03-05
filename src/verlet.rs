@@ -1,6 +1,7 @@
 
 use crate::vector::Vec2;
 
+#[derive(Clone, Copy)]
 pub struct VerletObject {
     pub position_current: Vec2,
     pub position_old: Vec2,
@@ -9,6 +10,15 @@ pub struct VerletObject {
 }
 
 impl VerletObject {
+    pub fn new(pos: Vec2, radius: f32) -> Self {
+        Self {
+            position_current: pos.clone(),
+            position_old: pos.clone(),
+            acceleration: Vec2::zero(),
+            radius
+        }
+    }
+
     pub fn update_position(&mut self, dt: f32) {
         let velocity = self.position_current - self.position_old;
         self.position_old = self.position_current;
