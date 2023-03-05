@@ -3,38 +3,42 @@ use crate::{vector::Vec2, verlet::VerletObject};
 use macroquad::prelude::{screen_width, screen_height};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
+// this is to prevent "popcorn effect" and is less effective the more objects there are
+pub const CELL_SIZE_RADIUS_FACTOR: f32 = 4.0;
+pub const DEFAULT_CELL_SIZE: f32 = 5.0;
+
 pub struct Solver {
     pub gravity: Vec2,
     pub verlet_objects: Vec<VerletObject>,
     pub cell_size: f32,
-    // pub cell_grid: Vec<Vec<Vec<usize>>>,
+    pub cell_grid: Vec<Vec<Vec<usize>>>,
 }
 
 impl Solver {
     pub fn new() -> Self {
-        // let grid_width: usize = screen_width().ceil() as usize;
-        // let grid_height: usize = screen_height().ceil() as usize;
-        // let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
-        // for i in 0..grid_height {
-        //     grid.push(Vec::with_capacity(grid_width));
-        //     for _ in 0..grid_width {
-        //         grid[i].push(vec![]);
-        //     }
-        // }
+        let grid_width: usize = (screen_width().ceil() / DEFAULT_CELL_SIZE) as usize;
+        let grid_height: usize = (screen_height().ceil() / DEFAULT_CELL_SIZE) as usize;
+        let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
+        for i in 0..grid_height {
+            grid.push(Vec::with_capacity(grid_width));
+            for _ in 0..grid_width {
+                grid[i].push(vec![]);
+            }
+        }
         Self {
             gravity: Vec2 {
                 x: 0.0,
                 y: 1000.0,
             },
             verlet_objects: vec![],
-            cell_size: 100.0, // optimize default after removing constant heap allocation
-            // cell_grid: grid,
+            cell_size: DEFAULT_CELL_SIZE,
+            cell_grid: grid,
         }
     }
 
     pub fn push(&mut self, obj: VerletObject) {
         // optimize cell size (factor to prevent "popcorn effect")
-        self.cell_size = self.cell_size.max(obj.radius * 2.5);
+        self.cell_size = self.cell_size.max(obj.radius * CELL_SIZE_RADIUS_FACTOR);
         self.verlet_objects.push(obj);
     }
 
@@ -58,6 +62,8 @@ impl Solver {
     }
 
     pub fn clear(&mut self) {
+        // shrink back cell size
+        self.cell_size = DEFAULT_CELL_SIZE;
         self.verlet_objects.clear();
     }
     
@@ -151,11 +157,20 @@ impl Solver {
         // create cell grid
         let grid_width: usize = (screen_width() / self.cell_size).ceil() as usize;
         let grid_height: usize = (screen_height() / self.cell_size).ceil() as usize;
-        let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
-        for i in 0..grid_height {
-            grid.push(Vec::with_capacity(grid_width));
-            for _ in 0..grid_width {
-                grid[i].push(vec![]);
+        if grid_height == self.cell_grid.len() && grid_width == self.cell_grid[0].len() {
+            for row in &mut self.cell_grid {
+                for vec in row {
+                    vec.clear();
+                }
+            }
+        } else {
+            //let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
+            self.cell_grid = Vec::with_capacity(grid_height);
+            for i in 0..grid_height {
+                self.cell_grid.push(Vec::with_capacity(grid_width));
+                for _ in 0..grid_width {
+                    self.cell_grid[i].push(vec![]);
+                }
             }
         }
 
@@ -164,21 +179,21 @@ impl Solver {
             let Vec2{x, y} = self.verlet_objects[i].position_current;
             let grid_x: usize = (x / self.cell_size).floor() as usize;
             let grid_y: usize = (y / self.cell_size).floor() as usize;
-            grid[grid_y][grid_x].push(i);
+            self.cell_grid[grid_y][grid_x].push(i);
         }
 
         // resolve cells
         for y in 0..grid_height {
             for x in 0..grid_width {
-                let current_cell: &Vec<usize> = &grid[y][x];
+                //let current_cell: &Vec<usize> = &self.cell_grid[y][x];
                 // iterate over neighbours
                 for dx in -1..=1 {
                     for dy in -1..=1 {
                         let ox: isize = x as isize + dx;
                         let oy: isize = y as isize + dy;
                         if ox >= 0 && oy >= 0 && ox < grid_width as isize && oy < grid_height as isize {
-                            let other_cell: &Vec<usize> = &grid[oy as usize][ox as usize];
-                            self.solve_cell_collisions(current_cell, other_cell);
+                            //let other_cell: &Vec<usize> = &self.cell_grid[oy as usize][ox as usize];
+                            self.solve_cell_collisions((x, y), (ox as usize, oy as usize));
                         }
                     }
                 }
@@ -201,11 +216,16 @@ impl Solver {
         // }
     }
 
-    pub fn solve_cell_collisions(&mut self, cell_1: &Vec<usize>, cell_2: &Vec<usize>) {
-        for obj_index_1 in cell_1 {
-            for obj_index_2 in cell_2 {
+    // pub fn solve_cell_collisions(&mut self, cell_1: &Vec<usize>, cell_2: &Vec<usize>) {
+    pub fn solve_cell_collisions(&mut self, cell_1_index: (usize, usize), cell_2_index: (usize, usize)) {
+        let (x, y): (usize, usize) = cell_1_index;
+        let (ox, oy): (usize, usize) = cell_2_index;
+        for obj_index_1_index in 0..self.cell_grid[y][x].len() {
+            for obj_index_2_index in 0..self.cell_grid[oy][ox].len() {
+                let obj_index_1: usize = self.cell_grid[y][x][obj_index_1_index];
+                let obj_index_2: usize = self.cell_grid[oy][ox][obj_index_2_index];
                 if obj_index_1 != obj_index_2 {
-                    self.solve_object_collision(*obj_index_1, *obj_index_2);
+                    self.solve_object_collision(obj_index_1, obj_index_2);
                 }
             }
         }

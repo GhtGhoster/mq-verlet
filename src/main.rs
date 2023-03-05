@@ -11,22 +11,32 @@ mod solver;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
-    // object limits before FPS drops:
+    // optimize for window resize (love you rib :3)
+    // improve frame time enforcement (min frame, max frame?)
+    // add color based on velocity
+    // add presets:
+    //  rain chaos (min 1001, max 1000)
+    //  stable stuff for window resizing
+    //  stable density showcase (big go up)
+    //  max objects at different sizes with stable fps
+    // approximate object limits before FPS drops:
     //  naive: 1600
     //  cellularized: 3300
-    //  cell (heap fixed): TODO
+    //  cell (heap fixed): 5000
 
     let mut rng: ThreadRng = thread_rng();
 
     let mut spawn_radius: f32 = 10.0;
     let mut spawn_count: usize = 100;
+    let mut enforce_fps: bool = true;
+    let mut forced_fps: f32 = 60.0;
     let mut auto_stabilize: bool = true;
     let mut spawn_stabilize: bool = false;
     let mut spawn_safety_radius_factor: f32 = 1.0;
     let mut spawn_safety_iterations: usize = 100;
-    let mut min_object_count: usize = 0;
+    let mut min_object_count: usize = 500;
     let mut ensure_min_object_count: bool = false;
-    let mut max_object_count: usize = 1500; // old max limit before FPS drops
+    let mut max_object_count: usize = 5000; // old max limit before FPS drops
     let mut ensure_max_object_count: bool = false;
 
     let fps: f64 = 60.0;
@@ -40,7 +50,11 @@ async fn main() {
         let now: f64 = get_time();
         let mut frame_time: f64 = now - last_frame;
         if frame_time >= 1.0 / fps {
-            frame_time = frame_time.min(0.1);
+            frame_time = if enforce_fps {
+                1.0/forced_fps as f64
+            } else {
+                frame_time.min(0.1)
+            };
             solver.update_with_substep(frame_time as f32, 8);
             last_frame = now;
             max_frame_time = frame_time;
@@ -111,10 +125,10 @@ async fn main() {
                     // header
                     ui.label("Add objects with scroll down, remove with scroll up");
                     ui.collapsing("Stats:", |ui| {
-                        ui.label(format!("FPS: {}", get_fps()));
-                        ui.label(format!("SimFPS: {:.2}", (1.0 / max_frame_time)));
-                        ui.label(format!("SimFrame time: {:.2}ms", (max_frame_time * 1000.0)));
+                        ui.label(format!("FPS: {:.02} ({:.02}ms)", get_fps(), 1000.0 / get_fps() as f32));
+                        ui.label(format!("SimFPS: {:.02} ({:.02}ms)", 1.0 / max_frame_time, max_frame_time * 1000.0));
                         ui.label(format!("Objects: {}", solver.verlet_objects.len()));
+                        ui.label(format!("Cell size: {} Grid size: [{}, {}]", solver.cell_size, solver.cell_grid[0].len(), solver.cell_grid.len()));
                     });
 
                     // main options
@@ -136,6 +150,20 @@ async fn main() {
                     // safety measures
                     ui.separator();
                     ui.collapsing("Safety measures", |ui| {
+                        ui.checkbox(&mut enforce_fps, "Enforce frame time:");
+                        ui.horizontal(|ui| {
+                            ui.add_enabled(enforce_fps, egui::Slider::new(&mut forced_fps, 30.0..=120.0));
+                            ui.add_enabled_ui(enforce_fps, |ui| {
+                                ui.label(format!("FPS ({:.02}ms)", 1000.0/forced_fps));
+                            });
+                        });
+                        ui.add_enabled_ui(enforce_fps, |ui| {
+                            if ui.button("Reset enforced frame time").clicked() {
+                                forced_fps = 60.0;
+                            };
+                        });
+
+                        ui.separator();
                         ui.horizontal(|ui| {
                             if ui.button("Stabilize").clicked() {
                                 solver.stabilize();
@@ -149,10 +177,10 @@ async fn main() {
                         ui.add(egui::Slider::new(&mut spawn_safety_iterations, 1..=100).text("Safe spawn iterations"));
 
                         ui.separator();
-                        ui.add(egui::Slider::new(&mut min_object_count, 0..=20000).text("Minimum object count"));
                         ui.checkbox(&mut ensure_min_object_count, "Ensure min object count");
-                        ui.add(egui::Slider::new(&mut max_object_count, 0..=20000).text("Maximum object count"));
+                        ui.add_enabled(ensure_min_object_count, egui::Slider::new(&mut min_object_count, 0..=20000).text("Minimum object count"));
                         ui.checkbox(&mut ensure_max_object_count, "Ensure max object count");
+                        ui.add_enabled(ensure_max_object_count, egui::Slider::new(&mut max_object_count, 0..=20000).text("Maximum object count"));
                     });
                 }
             );
