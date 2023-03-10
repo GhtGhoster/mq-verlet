@@ -18,6 +18,10 @@ impl Vec2 {
     pub fn len(&self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
+
+    pub fn is_nan(&self) -> bool {
+        self.x.is_nan() || self.y.is_nan()
+    }
 }
 
 impl Sub for Vec2 {

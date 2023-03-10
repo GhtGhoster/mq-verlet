@@ -32,6 +32,11 @@ $ProjectName = Split-Path -Leaf $PWD
 
 cargo build --release --target wasm32-unknown-unknown
 
+if (!($?)) {
+    Write-Host -ForegroundColor Blue "The build failed!"
+    exit 1
+}
+
 Write-Host -ForegroundColor Blue "Generating WASM binds"
 New-Item -ItemType Directory -Force -Path ".\wbindgen\"
 wasm-bindgen --target web --out-dir ".\wbindgen\" ".\target\wasm32-unknown-unknown\release\$ProjectName.wasm"

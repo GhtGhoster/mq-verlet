@@ -4,20 +4,33 @@ use macroquad::prelude::{screen_width, screen_height};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 // this is to prevent "popcorn effect" and is less effective the more objects there are
+// doubles as a default cell size (for smallest spawnable 1.0 radius objects)
 pub const CELL_SIZE_RADIUS_FACTOR: f32 = 4.0;
-pub const DEFAULT_CELL_SIZE: f32 = 5.0;
 
 pub struct Solver {
-    pub gravity: Vec2,
     pub verlet_objects: Vec<VerletObject>,
     pub cell_size: f32,
     pub cell_grid: Vec<Vec<Vec<usize>>>,
+
+    pub gravity: Vec2,
+    pub spawn_radius: f32,
+
+    pub spawn_safety_radius_factor: f32,
+    pub spawn_safety_iterations: usize,
+
+    pub stabilize_on_spawn: bool,
+    pub stabilize_on_oob: bool,
+
+    pub min_object_count: usize,
+    pub min_object_count_enforced: bool,
+    pub max_object_count: usize,
+    pub max_object_count_enforced: bool,
 }
 
 impl Solver {
     pub fn new() -> Self {
-        let grid_width: usize = (screen_width().ceil() / DEFAULT_CELL_SIZE) as usize;
-        let grid_height: usize = (screen_height().ceil() / DEFAULT_CELL_SIZE) as usize;
+        let grid_width: usize = (screen_width().ceil() / CELL_SIZE_RADIUS_FACTOR) as usize;
+        let grid_height: usize = (screen_height().ceil() / CELL_SIZE_RADIUS_FACTOR) as usize;
         let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
         for i in 0..grid_height {
             grid.push(Vec::with_capacity(grid_width));
@@ -26,17 +39,34 @@ impl Solver {
             }
         }
         Self {
+            verlet_objects: vec![],
+            cell_size: CELL_SIZE_RADIUS_FACTOR,
+            cell_grid: grid,
+
             gravity: Vec2 {
                 x: 0.0,
                 y: 1000.0,
             },
-            verlet_objects: vec![],
-            cell_size: DEFAULT_CELL_SIZE,
-            cell_grid: grid,
+            spawn_radius: 10.0,
+
+            spawn_safety_radius_factor: 1.0,
+            spawn_safety_iterations: 100,
+
+            stabilize_on_spawn: false,
+            stabilize_on_oob: false,
+
+            min_object_count: 500,
+            min_object_count_enforced: false,
+            max_object_count: 5000,
+            max_object_count_enforced: false,
         }
     }
 
     pub fn push(&mut self, obj: VerletObject) {
+        // shrink back cell size
+        if self.verlet_objects.is_empty() {
+            self.cell_size = CELL_SIZE_RADIUS_FACTOR;
+        }
         // optimize cell size (factor to prevent "popcorn effect")
         self.cell_size = self.cell_size.max(obj.radius * CELL_SIZE_RADIUS_FACTOR);
         self.verlet_objects.push(obj);
@@ -62,9 +92,38 @@ impl Solver {
     }
 
     pub fn clear(&mut self) {
-        // shrink back cell size
-        self.cell_size = DEFAULT_CELL_SIZE;
         self.verlet_objects.clear();
+    }
+
+    pub fn spawn(&mut self, pos: Vec2) {
+        self.push(VerletObject::new(pos, self.spawn_radius));
+    }
+
+    pub fn spawn_count(&mut self, spawn_count: usize) {
+        let mut rng: ThreadRng = thread_rng();
+        if self.stabilize_on_spawn {
+            self.stabilize();
+        }
+        for _ in 0..spawn_count {
+            let pos: Vec2 = {
+                let mut pos = Vec2 {
+                    x: rng.gen_range(self.spawn_radius..screen_width()-self.spawn_radius),
+                    y: rng.gen_range(self.spawn_radius..screen_height()-self.spawn_radius),
+                };
+                'unsafe_pos: for _ in 0..self.spawn_safety_iterations {
+                    for i in 0..self.verlet_objects.len() {
+                        let obj = self.verlet_objects[i];
+                        if !((obj.position_current - pos).len() < (obj.radius + self.spawn_radius) * self.spawn_safety_radius_factor) {
+                            break 'unsafe_pos;
+                        }
+                    }
+                    pos.x = rng.gen_range(self.spawn_radius..screen_width()-self.spawn_radius);
+                    pos.y = rng.gen_range(self.spawn_radius..screen_height()-self.spawn_radius);
+                }
+                pos
+            };
+            self.spawn(pos);
+        }
     }
     
     pub fn stabilize(&mut self) {
@@ -73,41 +132,13 @@ impl Solver {
         }
     }
 
-    pub fn spawn(&mut self, pos: Vec2, radius: f32) {
-        self.push(VerletObject::new(pos, radius));
-    }
-
-    pub fn spawn_count(
-        &mut self,
-        spawn_count: usize,
-        spawn_radius: f32,
-        spawn_safety_iterations: usize,
-        spawn_safety_radius_factor: f32,
-        spawn_stabilize: bool
-    ) {
-        let mut rng: ThreadRng = thread_rng();
-        if spawn_stabilize {
-            self.stabilize();
-        }
-        for _ in 0..spawn_count {
-            let pos: Vec2 = {
-                let mut pos = Vec2 {
-                    x: rng.gen_range(spawn_radius..screen_width()-spawn_radius),
-                    y: rng.gen_range(spawn_radius..screen_height()-spawn_radius),
-                };
-                'unsafe_pos: for _ in 0..spawn_safety_iterations {
-                    for i in 0..self.verlet_objects.len() {
-                        let obj = self.verlet_objects[i];
-                        if !((obj.position_current - pos).len() < (obj.radius + spawn_radius) * spawn_safety_radius_factor) {
-                            break 'unsafe_pos;
-                        }
-                    }
-                    pos.x = rng.gen_range(spawn_radius..screen_width()-spawn_radius);
-                    pos.y = rng.gen_range(spawn_radius..screen_height()-spawn_radius);
-                }
-                pos
-            };
-            self.spawn(pos, spawn_radius);
+    pub fn shake(&mut self, intensity: f32, direction: f32) {
+        let vec: Vec2 = Vec2 {
+            x: direction.cos() * intensity,
+            y: direction.sin() * intensity,
+        };
+        for i in 0..self.verlet_objects.len() {
+            self.verlet_objects[i].position_old += vec;
         }
     }
 
@@ -119,11 +150,13 @@ impl Solver {
     }
 
     pub fn update(&mut self, dt: f32) {
+        if self.verlet_objects.is_empty() {return};
         self.apply_gravity();
         self.apply_constraint();
         self.remove_oob_objs();
         self.solve_collisions();
         self.update_positions(dt);
+        self.enforce_object_count();
     }
 
     pub fn update_positions(&mut self, dt: f32) {
@@ -157,14 +190,16 @@ impl Solver {
         // create cell grid
         let grid_width: usize = (screen_width() / self.cell_size).ceil() as usize;
         let grid_height: usize = (screen_height() / self.cell_size).ceil() as usize;
-        if grid_height == self.cell_grid.len() && grid_width == self.cell_grid[0].len() {
-            for row in &mut self.cell_grid {
-                for vec in row {
-                    vec.clear();
+
+        if grid_height <= self.cell_grid.len() && grid_width <= self.cell_grid[0].len() {
+            // only clear cells that are necessary
+            for y in 0..grid_height {
+                for x in 0..grid_width {
+                    self.cell_grid[y][x].clear();
                 }
             }
         } else {
-            //let mut grid: Vec<Vec<Vec<usize>>> = Vec::with_capacity(grid_height);
+            // up the size of the grid
             self.cell_grid = Vec::with_capacity(grid_height);
             for i in 0..grid_height {
                 self.cell_grid.push(Vec::with_capacity(grid_width));
@@ -244,9 +279,31 @@ impl Solver {
     }
 
     pub fn remove_oob_objs(&mut self) {
+        let mut max_radius: f32 = 1.0;
         for i in (0..self.verlet_objects.len()).rev() {
-            if self.verlet_objects[i].position_old.x.is_nan() || self.verlet_objects[i].position_old.y.is_nan() {
+            if self.verlet_objects[i].position_current.is_nan() || self.verlet_objects[i].position_old.is_nan() {
                 self.verlet_objects.remove(i);
+                if self.stabilize_on_oob {
+                    self.stabilize();
+                }
+            } else {
+                max_radius = max_radius.max(self.verlet_objects[i].radius);
+            }
+        }
+        self.cell_size = max_radius * CELL_SIZE_RADIUS_FACTOR;
+    }
+
+    pub fn enforce_object_count(&mut self) {
+        if self.min_object_count_enforced {
+            let tmp_spawn_count: isize = self.min_object_count as isize - self.verlet_objects.len() as isize;
+            if tmp_spawn_count > 0 {
+                self.spawn_count(tmp_spawn_count as usize);
+            }
+        }
+        if self.max_object_count_enforced {
+            let tmp_spawn_count: isize = self.verlet_objects.len() as isize - self.max_object_count as isize;
+            if tmp_spawn_count > 0 {
+                self.remove_count(tmp_spawn_count as usize);
             }
         }
     }

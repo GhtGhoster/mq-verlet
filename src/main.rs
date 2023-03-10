@@ -1,191 +1,92 @@
 
 use macroquad::prelude::*;
-use ::rand::{thread_rng, rngs::ThreadRng, Rng};
-use solver::Solver;
-use verlet::VerletObject;
 use vector::Vec2;
+use context::Context;
+use ui::Windows;
 
 mod vector;
 mod verlet;
 mod solver;
+mod ui;
+mod context;
+mod render;
+mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
-    // optimize for window resize (love you rib :3)
-    // improve frame time enforcement (min frame, max frame?)
-    // add color based on velocity
-    // add presets:
-    //  rain chaos (min 1001, max 1000)
-    //  stable stuff for window resizing
-    //  stable density showcase (big go up)
-    //  max objects at different sizes with stable fps
+    // adjust mq-wasm-pages template from this repo
+    //      std::env::set_var("RUST_BACKTRACE", "1");
+    //      build.ps1
+    // game rules (window, ui, constaints, constaint condition (temperature))
+    // debug for android wasm
+    // time warp thingy, including complete stop (divide frame_time before passing to update)
+    // if last sim frame time < target frame time: disable target frame time
+    // better defaults for web
+    // (unlocked sim frame time, enabled lower 60 sfps max limit)
+    //      #[cfg(target_arch = "wasm32")]
+    //      #[cfg(target_os = "unknown")]
+    // simplify highlighting (maybe remove enum_map dependency)
+    // make everything (or generic?) f64 and compare
+    // shaders (fft, fire?)
+    // documentation
+    // spawned from this: 3d version
+    // parametrize stuff
+    //      what color to what color gradient based on what scale of velocity
+    //      temperature of particles (heat loss, temp to vel, color with scale)
+    //      velocity to radius
+    //      constraint type (window, circle, combinations)
+    // add presets (maybe need automation):
+    //      auto shaking (with looping over stuff and bpm/settable delay per shake)
+    //      rain chaos (min 1001, max 1000)
+    //      stable preset for window resize playing
+    //      stable density showcase (big go up, shake it up a little)
+    //      max objects at different sizes with stable fps
+    //      bubbling away (slowly replacing big ones with small ones)
     // approximate object limits before FPS drops:
-    //  naive: 1600
-    //  cellularized: 3300
-    //  cell (heap fixed): 5000
+    //      naive: 1600
+    //      cellularized: 3300
+    //      cell (heap fixed): 5000
 
-    let mut rng: ThreadRng = thread_rng();
-
-    let mut spawn_radius: f32 = 10.0;
-    let mut spawn_count: usize = 100;
-    let mut enforce_fps: bool = true;
-    let mut forced_fps: f32 = 60.0;
-    let mut auto_stabilize: bool = true;
-    let mut spawn_stabilize: bool = false;
-    let mut spawn_safety_radius_factor: f32 = 1.0;
-    let mut spawn_safety_iterations: usize = 100;
-    let mut min_object_count: usize = 500;
-    let mut ensure_min_object_count: bool = false;
-    let mut max_object_count: usize = 5000; // old max limit before FPS drops
-    let mut ensure_max_object_count: bool = false;
-
-    let fps: f64 = 60.0;
-    let mut last_frame = get_time();
-    let mut max_frame_time: f64 = 0.0;
-
-    let mut solver: Solver = Solver::new();
+    let mut context: Context = Context::default();
+    let mut windows: Windows = Windows::new();
+    let mut last_frame: f64 = get_time();
 
     loop {
         // logic
         let now: f64 = get_time();
         let mut frame_time: f64 = now - last_frame;
-        if frame_time >= 1.0 / fps {
-            frame_time = if enforce_fps {
-                1.0/forced_fps as f64
-            } else {
-                frame_time.min(0.1)
-            };
-            solver.update_with_substep(frame_time as f32, 8);
+        if !context.sfps_target_enforced || frame_time >= 1.0 / context.sfps_target {
+            if context.sfps_min_enforced {
+                frame_time = frame_time.min(1.0 / context.sfps_min);
+            }
+            if context.sfps_max_enforced {
+                frame_time = frame_time.max(1.0 / context.sfps_max);
+            }
+            context.solver.update_with_substep(frame_time as f32, context.sim_substeps);
+            context.last_sim_frame_time = frame_time as f32;
             last_frame = now;
-            max_frame_time = frame_time;
-        }
-
-        // ui logic
-        if ensure_min_object_count {
-            while solver.verlet_objects.len() < min_object_count {
-                let pos: Vec2 = Vec2 {
-                    x: rng.gen_range(spawn_radius..screen_width()-spawn_radius),
-                    y: rng.gen_range(spawn_radius..screen_height()-spawn_radius),
-                };
-                let obj: VerletObject = VerletObject {
-                    position_current: pos.clone(),
-                    position_old: pos.clone(),
-                    acceleration: Vec2::zero(),
-                    radius: spawn_radius,
-                };
-                solver.push(obj);
-            }
-        }
-        if ensure_max_object_count {
-            while solver.verlet_objects.len() > max_object_count {
-                solver.remove(0);
-            }
-        }
-        if auto_stabilize {
-            for i in 0..solver.verlet_objects.len() {
-                let Vec2{x, y} = solver.verlet_objects[i].position_current;
-                let r = solver.verlet_objects[i].radius;
-                if !(-r..screen_width()+r).contains(&x) || !(-r..screen_height()+r).contains(&y) {
-                    if auto_stabilize {
-                        solver.stabilize();
-                        break;
-                    }
-                }
-            }
-        }
-
-        // rendering
-        clear_background(BLACK);
-        let mut text_index = 1.0;
-        for verlet_object in &solver.verlet_objects {
-            let Vec2{x, y} = verlet_object.position_current;
-            let r = verlet_object.radius;
-            if !(-r..screen_width()+r).contains(&x) || !(-r..screen_height()+r).contains(&y) {
-                draw_text(format!("OOB: [{}, {}]", x, y).as_str(), 0., 20. * text_index, 20., RED);
-                text_index += 1.0;
-            } else {
-                draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.3));
-            }
         }
         
-        // ui
-        if mouse_wheel().1 < 0.0 {
-            let (x, y): (f32, f32) = mouse_position();
-            let pos: Vec2 = Vec2 {x, y};
-            solver.spawn(pos, spawn_radius);
+        // direct input
+        if context.accept_direct_controls {
+            if mouse_wheel().1 < 0.0 {
+                let (x, y): (f32, f32) = mouse_position();
+                let pos: Vec2 = Vec2 {x, y};
+                context.solver.spawn(pos);
+            }
+            if mouse_wheel().1 > 0.0 {
+                let (x, y): (f32, f32) = mouse_position();
+                let pos: Vec2 = Vec2 {x, y};
+                context.solver.remove_pos(pos);
+            }
         }
-        if mouse_wheel().1 > 0.0 {
-            let (x, y): (f32, f32) = mouse_position();
-            let pos: Vec2 = Vec2 {x, y};
-            solver.remove_pos(pos);
-        }
-        egui_macroquad::ui(|egui_ctx| {
-            egui::Window::new("Spawn Verlet object")
-                .show(egui_ctx, |ui| {
-                    // header
-                    ui.label("Add objects with scroll down, remove with scroll up");
-                    ui.collapsing("Stats:", |ui| {
-                        ui.label(format!("FPS: {:.02} ({:.02}ms)", get_fps(), 1000.0 / get_fps() as f32));
-                        ui.label(format!("SimFPS: {:.02} ({:.02}ms)", 1.0 / max_frame_time, max_frame_time * 1000.0));
-                        ui.label(format!("Objects: {}", solver.verlet_objects.len()));
-                        ui.label(format!("Cell size: {} Grid size: [{}, {}]", solver.cell_size, solver.cell_grid[0].len(), solver.cell_grid.len()));
-                    });
 
-                    // main options
-                    ui.separator();
-                    ui.add(egui::Slider::new(&mut spawn_count, 100..=1000).text("Count"));
-                    ui.add(egui::Slider::new(&mut spawn_radius, 1.0..=50.0).text("Radius"));
-                    ui.horizontal(|ui| {
-                        if ui.button("Spawn").clicked() {
-                            solver.spawn_count(spawn_count, spawn_radius, spawn_safety_iterations, spawn_safety_radius_factor, spawn_stabilize);
-                        }
-                        if ui.button("Remove").clicked() {
-                            solver.remove_count(spawn_count);
-                        }
-                        if ui.button("Clear").clicked() {
-                            solver.clear();
-                        }
-                    });
+        // simulation rendering
+        render::render(&mut context);
 
-                    // safety measures
-                    ui.separator();
-                    ui.collapsing("Safety measures", |ui| {
-                        ui.checkbox(&mut enforce_fps, "Enforce frame time:");
-                        ui.horizontal(|ui| {
-                            ui.add_enabled(enforce_fps, egui::Slider::new(&mut forced_fps, 30.0..=120.0));
-                            ui.add_enabled_ui(enforce_fps, |ui| {
-                                ui.label(format!("FPS ({:.02}ms)", 1000.0/forced_fps));
-                            });
-                        });
-                        ui.add_enabled_ui(enforce_fps, |ui| {
-                            if ui.button("Reset enforced frame time").clicked() {
-                                forced_fps = 60.0;
-                            };
-                        });
+        // ui rendering
+        ui::render(&mut context, &mut windows);
 
-                        ui.separator();
-                        ui.horizontal(|ui| {
-                            if ui.button("Stabilize").clicked() {
-                                solver.stabilize();
-                            }
-                            ui.checkbox(&mut auto_stabilize, "Automatic");
-                            ui.checkbox(&mut spawn_stabilize, "On spawn");
-                        });
-
-                        ui.separator();
-                        ui.add(egui::Slider::new(&mut spawn_safety_radius_factor, 0.0..=2.0).text("Safe spawn radius"));
-                        ui.add(egui::Slider::new(&mut spawn_safety_iterations, 1..=100).text("Safe spawn iterations"));
-
-                        ui.separator();
-                        ui.checkbox(&mut ensure_min_object_count, "Ensure min object count");
-                        ui.add_enabled(ensure_min_object_count, egui::Slider::new(&mut min_object_count, 0..=20000).text("Minimum object count"));
-                        ui.checkbox(&mut ensure_max_object_count, "Ensure max object count");
-                        ui.add_enabled(ensure_max_object_count, egui::Slider::new(&mut max_object_count, 0..=20000).text("Maximum object count"));
-                    });
-                }
-            );
-        });
-        egui_macroquad::draw();
         next_frame().await
     }
 }
