@@ -1,5 +1,5 @@
-use std::ops::{Sub, Add, Mul, AddAssign, Div, SubAssign};
 
+use std::ops::{Sub, Add, Mul, AddAssign, Div, SubAssign};
 
 #[derive(Clone, Copy)]
 pub struct Vec2 {

@@ -4,13 +4,17 @@ A Verlet solver based on
 [this](https://youtu.be/lS_qeBy3aQI) and
 [this](https://youtu.be/9IULfQH7E90) video, test it
 [here](https://ghtghoster.github.io/mq-verlet/).
-The purpose of this project is to familiarize myself with
-simple physics simulation, use of egui and macroquad libraries and
-writing shaders.
+The purpose of this project is to familiarize myself with simple physics
+simulations, shaders, and using `egui` and `macroquad` crates.
 
 More interesting crates to look out for in the future:
 - [`quad-storage`](https://crates.io/crates/quad-storage)
 - [`quad-url`](https://crates.io/crates/quad-url)
+
+Be advised that `egui-miniquad`'s dependency `quad-url` relies on an old,
+[vulnerable](https://github.com/advisories/GHSA-m589-mv4q-p7rj)
+version of `webbrowser` and neither me nor GitHub's Dependabot can fix it.
+This isn't actually used in code anywhere but be careful.
 
 ## Instructions and dependencies:
 

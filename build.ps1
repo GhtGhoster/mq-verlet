@@ -33,13 +33,18 @@ $ProjectName = Split-Path -Leaf $PWD
 cargo build --release --target wasm32-unknown-unknown
 
 if (!($?)) {
-    Write-Host -ForegroundColor Blue "The build failed!"
+    Write-Host -ForegroundColor Red "Build failed!"
     exit 1
 }
 
 Write-Host -ForegroundColor Blue "Generating WASM binds"
 New-Item -ItemType Directory -Force -Path ".\wbindgen\"
 wasm-bindgen --target web --out-dir ".\wbindgen\" ".\target\wasm32-unknown-unknown\release\$ProjectName.wasm"
+
+if (!($?)) {
+    Write-Host -ForegroundColor Red "Bind generation failed!"
+    exit 1
+}
 
 Write-Host -ForegroundColor Blue "Patching generated JavaScript"
 $JavaScript = Get-Content ".\wbindgen\$ProjectName.js"

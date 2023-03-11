@@ -76,9 +76,9 @@ impl Solver {
 
     pub fn push(&mut self, obj: VerletObject) {
         // shrink back cell size
-        if self.verlet_objects.is_empty() {
-            self.cell_size = CELL_SIZE_RADIUS_FACTOR;
-        }
+        // if self.verlet_objects.is_empty() {
+        //     self.cell_size = CELL_SIZE_RADIUS_FACTOR;
+        // }
         // optimize cell size (factor to prevent "popcorn effect")
         self.cell_size = self.cell_size.max(obj.radius * CELL_SIZE_RADIUS_FACTOR);
         self.verlet_objects.push(obj);
@@ -89,7 +89,7 @@ impl Solver {
     }
 
     pub fn remove_count(&mut self, obj_count: usize) {
-        self.verlet_objects.drain(0..obj_count);
+        self.verlet_objects.drain(0..obj_count.min(self.verlet_objects.len()));
     }
 
     pub fn remove_pos(&mut self, pos: Vec2) {
@@ -110,9 +110,6 @@ impl Solver {
 
     pub fn spawn_count(&mut self, spawn_count: usize) {
         let mut rng: ThreadRng = thread_rng();
-        if self.stabilize_on_spawn {
-            self.stabilize();
-        }
         for _ in 0..spawn_count {
             let pos: Vec2 = {
                 let mut pos = Vec2 {
@@ -132,6 +129,9 @@ impl Solver {
                 pos
             };
             self.spawn(pos);
+        }
+        if self.stabilize_on_spawn {
+            self.stabilize();
         }
     }
     

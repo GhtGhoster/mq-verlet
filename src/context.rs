@@ -1,5 +1,4 @@
 
-
 use macroquad::prelude::*;
 
 use crate::solver::Solver;

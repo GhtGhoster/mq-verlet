@@ -14,11 +14,9 @@ mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
+    // resistance
     // learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
-    // adjust mq-wasm-pages template from this repo
-    //      std::env::set_var("RUST_BACKTRACE", "1");
-    //      build.ps1 (safeguards against failed compilation or bindgen)
-    // game rules (window, ui, constaints, constaint condition (temperature))
+    // game rules (circle constaint, constaint condition (temperature, bounce))
     // debug for android wasm
     // time warp thingy, including complete stop (divide frame_time before passing to update)
     // if last sim frame time < target frame time: disable target frame time
@@ -37,6 +35,7 @@ async fn main() {
     //      velocity to radius
     //      constraint type (window, circle, combinations)
     // add presets (maybe need automation):
+    //      0 grav bowling/pool like stuff 
     //      auto shaking (with looping over stuff and bpm/settable delay per shake)
     //      rain chaos (min 1001, max 1000)
     //      stable preset for window resize playing
