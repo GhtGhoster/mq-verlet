@@ -1,12 +1,18 @@
 
 use crate::{context::{self, Context}, syntax_highlighting::CodeTheme};
-use egui::Id;
 use macroquad::prelude::*;
+use ::rand::{rngs::ThreadRng, thread_rng, Rng};
+
+pub const RIGHT: f32 = 0.0;
+pub const DOWN: f32 = 90.0;
+pub const LEFT: f32 = 180.0;
+pub const UP: f32 = 270.0;
 
 pub struct Windows {
     pub controls: bool,
     pub stats: bool,
     pub shaders: bool,
+    pub rules: bool,
 }
 
 impl Windows {
@@ -15,6 +21,7 @@ impl Windows {
             controls: false,
             stats: false,
             shaders: false,
+            rules: false,
         }
     }
 }
@@ -27,6 +34,7 @@ pub fn render(context: &mut Context, windows: &mut Windows) {
                 ui.checkbox(&mut windows.controls, "Controls");
                 ui.checkbox(&mut windows.stats, "Stats");
                 ui.checkbox(&mut windows.shaders, "Shaders");
+                ui.checkbox(&mut windows.rules, "Rules");
             });
         egui::Window::new("Controls")
             .open(&mut windows.controls)
@@ -39,11 +47,15 @@ pub fn render(context: &mut Context, windows: &mut Windows) {
                 stats(ui, context, get_fps() as f32);
             });
         egui::Window::new("Shaders")
-            .id(Id::new("shader_window_id"))
             .open(&mut windows.shaders)
             .default_size((600.0, 500.0))
             .show(egui_ctx, |ui| {
                 code_editor(ui, context);
+            });
+        egui::Window::new("Rules")
+            .open(&mut windows.rules)
+            .show(egui_ctx, |ui| {
+                rules(ui, context);
             });
     });
 
@@ -205,8 +217,10 @@ pub fn stats(ui: &mut egui::Ui, context: &mut Context, fps: f32) {
 
 pub fn controls(ui: &mut egui::Ui, context: &mut Context) {
     ui.checkbox(&mut context.accept_direct_controls, "Enable manual controls");
-    ui.label("Add objects with scroll down");
-    ui.label("Remove objects with scroll up");
+    if context.accept_direct_controls {
+        ui.label("Add objects with scroll down");
+        ui.label("Remove objects with scroll up");
+    }
 
     ui.separator();
     ui.label("Object management");
@@ -225,11 +239,55 @@ pub fn controls(ui: &mut egui::Ui, context: &mut Context) {
     });
 
     ui.separator();
-    ui.label("Shaking it up");
-    ui.add(egui::Slider::new(&mut context.shake_intensity, 0.0..=5.0).text("Intensitiy"));
-    ui.add(egui::Slider::new(&mut context.shake_direction, 0.0..=360.0).text("Direction"));
-    if ui.button("Shake").clicked() {
-        context.solver.shake(context.shake_intensity, context.shake_direction.to_radians());
+    ui.label("Accelerate all objects");
+    let mut direction_string: String = String::new();
+    let tmp_direction: f32 = context.shake_direction % 360.0;
+    if tmp_direction > RIGHT && tmp_direction < LEFT {
+        direction_string += "Down";
+    } else if tmp_direction > LEFT {
+        direction_string += "Up"
+    }
+    if tmp_direction > DOWN && tmp_direction < UP {
+        if !direction_string.is_empty() {
+            direction_string += "-";
+        }
+        direction_string += "Left";
+    } else if tmp_direction < DOWN || tmp_direction > UP {
+        if !direction_string.is_empty() {
+            direction_string += "-";
+        }
+        direction_string += "Right"
+    }
+    ui.add(egui::Slider::new(&mut context.shake_intensity, 100_000.0..=1_000_000.0).text("Intensitiy"));
+    ui.add(egui::Slider::new(&mut context.shake_direction, 0.0..=360.0)
+        .text(format!("Direction ({direction_string})"))
+        .custom_formatter(|p, _| {format!("{p}°").to_string()}));
+    ui.horizontal(|ui| {
+        if ui.button("Right").clicked() {
+            context.shake_direction = RIGHT;
+        }
+        if ui.button("Down").clicked() {
+            context.shake_direction = DOWN;
+        }
+        if ui.button("Left").clicked() {
+            context.shake_direction = LEFT;
+        }
+        if ui.button("Up").clicked() {
+            context.shake_direction = UP;
+        }
+    });
+    let mut rng: ThreadRng = thread_rng();
+    ui.horizontal(|ui| {
+        if ui.button("Randomize direction").clicked() {
+            context.shake_direction = rng.gen_range(0..360) as f32;
+        }
+        ui.checkbox(&mut context.shake_auto_random, "After each acceleration");
+    });
+    if ui.button("Accelerate").clicked() {
+        context.solver.accelerate_all(context.shake_intensity, context.shake_direction.to_radians());
+        if context.shake_auto_random {
+            context.shake_direction = rng.gen_range(0..360) as f32;
+        }
     }
 
     ui.separator();
@@ -248,4 +306,45 @@ pub fn controls(ui: &mut egui::Ui, context: &mut Context) {
         ui.add(egui::Slider::new(&mut context.solver.spawn_safety_radius_factor, 0.0..=2.0).text("Safe spawn radius factor"));
         ui.add(egui::Slider::new(&mut context.solver.spawn_safety_iterations, 1..=100).text("Safe spawn iterations"));
     });
+}
+
+pub fn rules(ui: &mut egui::Ui, context: &mut Context) {
+    ui.label("Gravity");
+    ui.add(
+        egui::Slider::new(&mut context.solver.gravity.x, 0.0..=5_000.0).text("X axis")
+    );
+    ui.add(
+        egui::Slider::new(&mut context.solver.gravity.y, 0.0..=5_000.0).text("Y axis")
+    );
+    ui.horizontal(|ui| {
+        if ui.button("Default").clicked() {
+            context.solver.gravity.x = 0.0;
+            context.solver.gravity.y = 1_000.0;
+        }
+        if ui.button("Zero").clicked() {
+            context.solver.gravity.x = 0.0;
+            context.solver.gravity.y = 0.0;
+        }
+    });
+
+
+    ui.separator();
+    ui.label("Contraint enforcement");
+    ui.checkbox(&mut context.solver.apply_constraint_bottom, "Apply bottom constraint");
+    ui.checkbox(&mut context.solver.apply_constraint_top, "Apply top constraint");
+    ui.checkbox(&mut context.solver.apply_constraint_left, "Apply left constraint");
+    ui.checkbox(&mut context.solver.apply_constraint_right, "Apply right constraint");
+
+    ui.separator();
+    ui.label("Object count enforcement");
+    ui.checkbox(&mut context.solver.max_object_count_enforced, "Enforce max object count");
+    ui.add_enabled(
+        context.solver.max_object_count_enforced,
+        egui::Slider::new(&mut context.solver.max_object_count, 0..=5000)
+    );
+    ui.checkbox(&mut context.solver.min_object_count_enforced, "Enforce min object count");
+    ui.add_enabled(
+        context.solver.min_object_count_enforced,
+        egui::Slider::new(&mut context.solver.min_object_count, 0..=5000)
+    );
 }

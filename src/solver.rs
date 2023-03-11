@@ -25,6 +25,12 @@ pub struct Solver {
     pub min_object_count_enforced: bool,
     pub max_object_count: usize,
     pub max_object_count_enforced: bool,
+
+    pub apply_constraint_bottom: bool,
+    pub apply_constraint_top: bool,
+    pub apply_constraint_left: bool,
+    pub apply_constraint_right: bool,
+    pub apply_constraint_circle: bool,
 }
 
 impl Solver {
@@ -45,7 +51,7 @@ impl Solver {
 
             gravity: Vec2 {
                 x: 0.0,
-                y: 1000.0,
+                y: 1_000.0,
             },
             spawn_radius: 10.0,
 
@@ -59,6 +65,12 @@ impl Solver {
             min_object_count_enforced: false,
             max_object_count: 5000,
             max_object_count_enforced: false,
+
+            apply_constraint_bottom: true,
+            apply_constraint_top: true,
+            apply_constraint_left: true,
+            apply_constraint_right: true,
+            apply_constraint_circle: false,
         }
     }
 
@@ -129,13 +141,13 @@ impl Solver {
         }
     }
 
-    pub fn shake(&mut self, intensity: f32, direction: f32) {
+    pub fn accelerate_all(&mut self, intensity: f32, direction: f32) {
         let vec: Vec2 = Vec2 {
             x: direction.cos() * intensity,
             y: direction.sin() * intensity,
         };
         for i in 0..self.verlet_objects.len() {
-            self.verlet_objects[i].position_old += vec;
+            self.verlet_objects[i].accelerate(vec);
         }
     }
 
@@ -147,6 +159,7 @@ impl Solver {
     }
 
     pub fn update(&mut self, dt: f32) {
+        if self.verlet_objects.is_empty() {self.enforce_object_count()};
         if self.verlet_objects.is_empty() {return};
         self.apply_gravity();
         self.apply_constraint();
@@ -169,18 +182,38 @@ impl Solver {
     }
 
     pub fn apply_constraint(&mut self) {
-        for obj in self.verlet_objects.iter_mut() {
-            if obj.position_current.x < obj.radius {
-                obj.position_current.x = obj.radius;
-            } else if obj.position_current.x > screen_width() - obj.radius {
-                obj.position_current.x = screen_width() - obj.radius;
+        let mut max_radius: f32 = 1.0; // optimizing cell size for next update
+        for i in (0..self.verlet_objects.len()).rev() {
+            if self.apply_constraint_top && self.verlet_objects[i].position_current.y < self.verlet_objects[i].radius {
+                self.verlet_objects[i].position_current.y = self.verlet_objects[i].radius;
             }
-            if obj.position_current.y < obj.radius {
-                obj.position_current.y = obj.radius;
-            } else if obj.position_current.y > screen_height() - obj.radius {
-                obj.position_current.y = screen_height() - obj.radius;
+            if self.apply_constraint_bottom && self.verlet_objects[i].position_current.y > screen_height() - self.verlet_objects[i].radius {
+                self.verlet_objects[i].position_current.y = screen_height() - self.verlet_objects[i].radius;
+            }
+            if self.apply_constraint_left && self.verlet_objects[i].position_current.x < self.verlet_objects[i].radius {
+                self.verlet_objects[i].position_current.x = self.verlet_objects[i].radius;
+            }
+            if self.apply_constraint_right && self.verlet_objects[i].position_current.x > screen_width() - self.verlet_objects[i].radius {
+                self.verlet_objects[i].position_current.x = screen_width() - self.verlet_objects[i].radius;
+            }
+
+            // if obj still outside contraints, handle oob
+            if
+                self.verlet_objects[i].position_current.is_nan() ||
+                self.verlet_objects[i].position_current.y < -self.verlet_objects[i].radius ||
+                self.verlet_objects[i].position_current.y > screen_height() + self.verlet_objects[i].radius ||
+                self.verlet_objects[i].position_current.x < -self.verlet_objects[i].radius ||
+                self.verlet_objects[i].position_current.x > screen_width() + self.verlet_objects[i].radius
+            {
+                self.verlet_objects.remove(i);
+                if self.stabilize_on_oob {
+                    self.stabilize();
+                }
+            } else {
+                max_radius = max_radius.max(self.verlet_objects[i].radius);
             }
         }
+        self.cell_size = max_radius * CELL_SIZE_RADIUS_FACTOR;
     }
 
     pub fn solve_collisions(&mut self) {
@@ -211,7 +244,9 @@ impl Solver {
             let Vec2{x, y} = self.verlet_objects[i].position_current;
             let grid_x: usize = (x / self.cell_size).floor() as usize;
             let grid_y: usize = (y / self.cell_size).floor() as usize;
-            self.cell_grid[grid_y][grid_x].push(i);
+            if (0..grid_width).contains(&grid_x) && (0..grid_height).contains(&grid_y) {
+                self.cell_grid[grid_y][grid_x].push(i);
+            }
         }
 
         // resolve cells
@@ -231,21 +266,6 @@ impl Solver {
                 }
             }
         }
-
-        // old, naive collision resolution (~1600 objects before <60fps)
-        // for i in 0..self.verlet_objects.len() {
-        //     for k in i+1..self.verlet_objects.len() {
-        //         let collision_axis: Vec2 = self.verlet_objects[i].position_current - self.verlet_objects[k].position_current;
-        //         let dist: f32 = collision_axis.len();
-        //         let radii: f32 = self.verlet_objects[i].radius + self.verlet_objects[k].radius;
-        //         if dist < radii {
-        //             let n: Vec2 = collision_axis / dist;
-        //             let delta: f32 = radii - dist;
-        //             self.verlet_objects[i].position_current += n * 0.5 * delta;
-        //             self.verlet_objects[k].position_current -= n * 0.5 * delta;
-        //         }
-        //     }
-        // }
     }
 
     // pub fn solve_cell_collisions(&mut self, cell_1: &Vec<usize>, cell_2: &Vec<usize>) {
@@ -276,18 +296,6 @@ impl Solver {
     }
 
     pub fn remove_oob_objs(&mut self) {
-        let mut max_radius: f32 = 1.0;
-        for i in (0..self.verlet_objects.len()).rev() {
-            if self.verlet_objects[i].position_current.is_nan() || self.verlet_objects[i].position_old.is_nan() {
-                self.verlet_objects.remove(i);
-                if self.stabilize_on_oob {
-                    self.stabilize();
-                }
-            } else {
-                max_radius = max_radius.max(self.verlet_objects[i].radius);
-            }
-        }
-        self.cell_size = max_radius * CELL_SIZE_RADIUS_FACTOR;
     }
 
     pub fn enforce_object_count(&mut self) {

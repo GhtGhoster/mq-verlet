@@ -63,6 +63,8 @@ pub struct Context {
 
     // interaction variables
     pub spawn_count: usize,
+
+    pub shake_auto_random: bool,
     pub shake_intensity: f32,
     pub shake_direction: f32,
 
@@ -102,7 +104,9 @@ impl Context {
             accept_direct_controls: true,
 
             spawn_count: 100,
-            shake_intensity: 0.5,
+
+            shake_auto_random: false,
+            shake_intensity: 100_000.0,
             shake_direction: 90.0,
             
             use_shaders: false,

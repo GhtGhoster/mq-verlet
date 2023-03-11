@@ -41,4 +41,7 @@ pub fn render(context: &mut Context) {
     }
 
     // oob object rendering (text)
+    for (i, text) in oob_text.iter().enumerate() {
+        draw_text(text, 0.0, 20.0 * i as f32, 20., RED);
+    }
 }
