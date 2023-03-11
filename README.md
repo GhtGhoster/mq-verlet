@@ -1,11 +1,12 @@
 # Verlet solver
 
-[Test it here](https://ghtghoster.github.io/mq-verlet/)
-
-
 A Verlet solver based on
 [this](https://youtu.be/lS_qeBy3aQI) and
-[this](https://youtu.be/9IULfQH7E90) video.
+[this](https://youtu.be/9IULfQH7E90) video, test it
+[here](https://ghtghoster.github.io/mq-verlet/).
+The purpose of this project is to familiarize myself with
+simple physics simulation, use of egui and macroquad libraries and
+writing shaders.
 
 More interesting crates to look out for in the future:
 - [`quad-storage`](https://crates.io/crates/quad-storage)

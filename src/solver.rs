@@ -77,10 +77,7 @@ impl Solver {
     }
 
     pub fn remove_count(&mut self, obj_count: usize) {
-        for _ in 0..obj_count {
-            if self.verlet_objects.len() == 0 {break;}
-            self.remove(0);
-        }
+        self.verlet_objects.drain(0..obj_count);
     }
 
     pub fn remove_pos(&mut self, pos: Vec2) {

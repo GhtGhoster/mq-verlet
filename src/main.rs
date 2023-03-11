@@ -14,9 +14,10 @@ mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
+    // learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
     // adjust mq-wasm-pages template from this repo
     //      std::env::set_var("RUST_BACKTRACE", "1");
-    //      build.ps1
+    //      build.ps1 (safeguards against failed compilation or bindgen)
     // game rules (window, ui, constaints, constaint condition (temperature))
     // debug for android wasm
     // time warp thingy, including complete stop (divide frame_time before passing to update)
