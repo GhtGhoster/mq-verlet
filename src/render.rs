@@ -22,6 +22,7 @@ pub fn render(context: &mut Context) {
     for verlet_object in &context.solver.verlet_objects {
         let Vec2{x, y} = verlet_object.position_current;
         let r = verlet_object.radius;
+        let t = verlet_object.temperature;
         if !(-r..screen_width()+r).contains(&x) || !(-r..screen_height()+r).contains(&y) {
             oob_text.push(format!("OOB: [{}, {}]", x, y));
         } else {
@@ -30,7 +31,8 @@ pub fn render(context: &mut Context) {
                 context.material.set_uniform("kekw", vec4(1.0, 1.0, 1.0, 1.0));
             }
 
-            draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.4));
+            // draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.4));
+            draw_circle(x, y, r, temperature_to_color(t));
         }
     }
 
@@ -41,7 +43,16 @@ pub fn render(context: &mut Context) {
     }
 
     // oob object rendering (text)
-    for (i, text) in oob_text.iter().enumerate() {
-        draw_text(text, 0.0, 20.0 * i as f32, 20., RED);
+    if !context.use_shaders {
+        for (i, text) in oob_text.iter().enumerate() {
+            draw_text(text, 0.0, 20.0 * i as f32, 20., RED);
+        }
     }
+}
+
+pub fn temperature_to_color(temperature: f32) -> Color {
+    let red = (temperature*2.0).clamp(0.0, 1.0);
+    let green = (temperature*0.7).clamp(0.0, 1.0);
+    let blue = (temperature*0.3).clamp(0.0, 1.0);
+    Color::new(red, green, blue, 1.0)
 }

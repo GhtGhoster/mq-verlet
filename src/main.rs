@@ -14,9 +14,12 @@ mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
+    // fire:
+    //      this is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
+    //      add math equation parser with variable input and relevant UI for goofing
     // resistance
     // learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
-    // game rules (circle constaint, constaint condition (temperature, bounce))
+    // game rules (circle constaint (with adjust point gravity), constaint condition (temperature, bounce))
     // debug for android wasm
     // time warp thingy, including complete stop (divide frame_time before passing to update)
     // if last sim frame time < target frame time: disable target frame time
@@ -35,6 +38,7 @@ async fn main() {
     //      velocity to radius
     //      constraint type (window, circle, combinations)
     // add presets (maybe need automation):
+    //      mixer (cw or ccw shake timed accordingly)
     //      0 grav bowling/pool like stuff 
     //      auto shaking (with looping over stuff and bpm/settable delay per shake)
     //      rain chaos (min 1001, max 1000)

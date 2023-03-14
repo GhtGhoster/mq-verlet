@@ -172,32 +172,41 @@ impl Solver {
     pub fn update_positions(&mut self, dt: f32) {
         for obj in self.verlet_objects.iter_mut() {
             obj.update_position(dt);
+            obj.temperature *= 0f32.max(1.0 - (dt*2.0));
         }
     }
 
     pub fn apply_gravity(&mut self) {
         for obj in self.verlet_objects.iter_mut() {
             obj.accelerate(self.gravity);
+            obj.accelerate(self.gravity * -0f32.max((obj.temperature+1.0).powf(4.0) - 1.0));
+            //obj.position_old += (self.gravity * (1.0/1000000.0)) * ((obj.temperature+1.0).powf(2.0) - 1.0);
         }
     }
 
     pub fn apply_constraint(&mut self) {
-        let mut max_radius: f32 = 1.0; // optimizing cell size for next update
+        // value for optimizing cell size for next update
+        let mut max_radius: f32 = 1.0;
         for i in (0..self.verlet_objects.len()).rev() {
+            // top
             if self.apply_constraint_top && self.verlet_objects[i].position_current.y < self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.y = self.verlet_objects[i].radius;
             }
+            // bottom
             if self.apply_constraint_bottom && self.verlet_objects[i].position_current.y > screen_height() - self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.y = screen_height() - self.verlet_objects[i].radius;
+                self.verlet_objects[i].temperature += 0.1; //(-((self.verlet_objects[i].position_current.x / screen_width()) - 0.5).abs() + 0.5) * 4.0;
             }
+            // left
             if self.apply_constraint_left && self.verlet_objects[i].position_current.x < self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.x = self.verlet_objects[i].radius;
             }
+            // right
             if self.apply_constraint_right && self.verlet_objects[i].position_current.x > screen_width() - self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.x = screen_width() - self.verlet_objects[i].radius;
             }
 
-            // if obj still outside contraints, handle oob
+            // obj still outside contraints, handle OOB
             if
                 self.verlet_objects[i].position_current.is_nan() ||
                 self.verlet_objects[i].position_current.y < -self.verlet_objects[i].radius ||
@@ -292,6 +301,11 @@ impl Solver {
             let delta: f32 = radii - dist;
             self.verlet_objects[obj_index_1].position_current += n * 0.5 * delta;
             self.verlet_objects[obj_index_2].position_current -= n * 0.5 * delta;
+
+            let tmp_diff = ((self.verlet_objects[obj_index_1].temperature - self.verlet_objects[obj_index_2].temperature) / 2.0) * 0.01;
+            self.verlet_objects[obj_index_1].temperature -= tmp_diff;
+            self.verlet_objects[obj_index_2].temperature += tmp_diff;
+            
         }
     }
 

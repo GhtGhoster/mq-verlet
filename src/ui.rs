@@ -311,10 +311,10 @@ pub fn controls(ui: &mut egui::Ui, context: &mut Context) {
 pub fn rules(ui: &mut egui::Ui, context: &mut Context) {
     ui.label("Gravity");
     ui.add(
-        egui::Slider::new(&mut context.solver.gravity.x, 0.0..=5_000.0).text("X axis")
+        egui::Slider::new(&mut context.solver.gravity.x, 0.0..=10_000.0).text("X axis")
     );
     ui.add(
-        egui::Slider::new(&mut context.solver.gravity.y, 0.0..=5_000.0).text("Y axis")
+        egui::Slider::new(&mut context.solver.gravity.y, 0.0..=10_000.0).text("Y axis")
     );
     ui.horizontal(|ui| {
         if ui.button("Default").clicked() {
