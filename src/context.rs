@@ -58,7 +58,9 @@ pub struct Context {
     // actual resulting simulation frame time
     pub last_sim_frame_time: f32,
 
+    // manual controls
     pub accept_direct_controls: bool,
+    pub random_direct_controls: bool,
 
     // interaction variables
     pub spawn_count: usize,
@@ -101,6 +103,7 @@ impl Context {
             last_sim_frame_time: 0.0,
 
             accept_direct_controls: true,
+            random_direct_controls: true,
 
             spawn_count: 100,
 

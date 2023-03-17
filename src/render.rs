@@ -31,8 +31,8 @@ pub fn render(context: &mut Context) {
                 context.material.set_uniform("kekw", vec4(1.0, 1.0, 1.0, 1.0));
             }
 
-            // draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.4));
-            draw_circle(x, y, r, temperature_to_color(t));
+            draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.5));
+            // draw_circle(x, y, r, temperature_to_color(t));
         }
     }
 

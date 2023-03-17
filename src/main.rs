@@ -1,5 +1,6 @@
 
 use macroquad::prelude::*;
+use ::rand::{rngs::ThreadRng, thread_rng, Rng};
 use vector::Vec2;
 use context::Context;
 use ui::Windows;
@@ -14,10 +15,15 @@ mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
+    // few glaring issue of the simulation:
+    //      the optimization cell block size has to be quite a bit larger than the object given a homogenous obj size due to "popcorn effect"
+    //      the simulation still freaks out at large quantities of objects moving
+    //      not running quite as fast as I'd hoped
+    //      only supports circles
     // fire:
     //      this is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
     //      add math equation parser with variable input and relevant UI for goofing
-    // resistance
+    // implement resistance
     // learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
     // game rules (circle constaint (with adjust point gravity), constaint condition (temperature, bounce))
     // debug for android wasm
@@ -54,6 +60,7 @@ async fn main() {
     let mut context: Context = Context::default();
     let mut windows: Windows = Windows::new();
     let mut last_frame: f64 = get_time();
+    let mut rng: ThreadRng = thread_rng();
 
     loop {
         // logic
@@ -74,7 +81,11 @@ async fn main() {
         // direct input
         if context.accept_direct_controls {
             if mouse_wheel().1 < 0.0 {
-                let (x, y): (f32, f32) = mouse_position();
+                let (mut x, mut y): (f32, f32) = mouse_position();
+                if context.random_direct_controls {
+                    x += rng.gen_range(-0.5..0.5);
+                    y += rng.gen_range(-0.5..0.5);
+                }
                 let pos: Vec2 = Vec2 {x, y};
                 context.solver.spawn(pos);
             }

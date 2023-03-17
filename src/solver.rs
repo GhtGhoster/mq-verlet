@@ -30,7 +30,18 @@ pub struct Solver {
     pub apply_constraint_top: bool,
     pub apply_constraint_left: bool,
     pub apply_constraint_right: bool,
-    pub apply_constraint_circle: bool,
+
+    pub apply_bounce_bottom: bool,
+    pub apply_bounce_top: bool,
+    pub apply_bounce_left: bool,
+    pub apply_bounce_right: bool,
+
+    pub apply_temperature_bottom: f32,
+    pub apply_temperature_top: f32,
+    pub apply_temperature_left: f32,
+    pub apply_temperature_right: f32,
+
+    pub accelerate_on_temperature: bool,
 }
 
 impl Solver {
@@ -70,15 +81,22 @@ impl Solver {
             apply_constraint_top: true,
             apply_constraint_left: true,
             apply_constraint_right: true,
-            apply_constraint_circle: false,
+
+            apply_bounce_bottom: true,
+            apply_bounce_top: true,
+            apply_bounce_left: true,
+            apply_bounce_right: true,
+
+            apply_temperature_bottom: 0.0,
+            apply_temperature_top: 0.0,
+            apply_temperature_left: 0.0,
+            apply_temperature_right: 0.0,
+
+            accelerate_on_temperature: false,
         }
     }
 
     pub fn push(&mut self, obj: VerletObject) {
-        // shrink back cell size
-        // if self.verlet_objects.is_empty() {
-        //     self.cell_size = CELL_SIZE_RADIUS_FACTOR;
-        // }
         // optimize cell size (factor to prevent "popcorn effect")
         self.cell_size = self.cell_size.max(obj.radius * CELL_SIZE_RADIUS_FACTOR);
         self.verlet_objects.push(obj);
@@ -179,8 +197,9 @@ impl Solver {
     pub fn apply_gravity(&mut self) {
         for obj in self.verlet_objects.iter_mut() {
             obj.accelerate(self.gravity);
-            obj.accelerate(self.gravity * -0f32.max((obj.temperature+1.0).powf(4.0) - 1.0));
-            //obj.position_old += (self.gravity * (1.0/1000000.0)) * ((obj.temperature+1.0).powf(2.0) - 1.0);
+            if self.accelerate_on_temperature {
+                obj.accelerate(self.gravity * -0f32.max((obj.temperature+1.0).powf(4.0) - 1.0));
+            }
         }
     }
 
@@ -188,25 +207,43 @@ impl Solver {
         // value for optimizing cell size for next update
         let mut max_radius: f32 = 1.0;
         for i in (0..self.verlet_objects.len()).rev() {
+            // previous iteration on temperature added the following formula
+            // (-((self.verlet_objects[i].position_current.x / screen_width()) - 0.5).abs() + 0.5) * 4.0;
+
             // top
             if self.apply_constraint_top && self.verlet_objects[i].position_current.y < self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.y = self.verlet_objects[i].radius;
+                if self.apply_bounce_top {
+                    self.verlet_objects[i].position_old.y += (self.verlet_objects[i].position_current.y - self.verlet_objects[i].position_old.y) * 2.0;
+                }
+                self.verlet_objects[i].temperature += self.apply_temperature_top;
             }
             // bottom
             if self.apply_constraint_bottom && self.verlet_objects[i].position_current.y > screen_height() - self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.y = screen_height() - self.verlet_objects[i].radius;
-                self.verlet_objects[i].temperature += 0.1; //(-((self.verlet_objects[i].position_current.x / screen_width()) - 0.5).abs() + 0.5) * 4.0;
+                if self.apply_bounce_bottom {
+                    self.verlet_objects[i].position_old.y += (self.verlet_objects[i].position_current.y - self.verlet_objects[i].position_old.y) * 2.0;
+                }
+                self.verlet_objects[i].temperature += self.apply_temperature_bottom;
             }
             // left
             if self.apply_constraint_left && self.verlet_objects[i].position_current.x < self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.x = self.verlet_objects[i].radius;
+                if self.apply_bounce_left {
+                    self.verlet_objects[i].position_old.x += (self.verlet_objects[i].position_current.x - self.verlet_objects[i].position_old.x) * 2.0;
+                }
+                self.verlet_objects[i].temperature += self.apply_temperature_left;
             }
             // right
             if self.apply_constraint_right && self.verlet_objects[i].position_current.x > screen_width() - self.verlet_objects[i].radius {
                 self.verlet_objects[i].position_current.x = screen_width() - self.verlet_objects[i].radius;
+                if self.apply_bounce_right {
+                    self.verlet_objects[i].position_old.x += (self.verlet_objects[i].position_current.x - self.verlet_objects[i].position_old.x) * 2.0;
+                }
+                self.verlet_objects[i].temperature += self.apply_temperature_right;
             }
 
-            // obj still outside contraints, handle OOB
+            // obj still outside constraints, handle OOB
             if
                 self.verlet_objects[i].position_current.is_nan() ||
                 self.verlet_objects[i].position_current.y < -self.verlet_objects[i].radius ||
