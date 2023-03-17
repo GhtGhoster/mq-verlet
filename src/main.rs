@@ -15,34 +15,39 @@ mod syntax_highlighting;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
+    // == MOVE TO README ==
     // few glaring issue of the simulation:
     //      the optimization cell block size has to be quite a bit larger than the object given a homogenous obj size due to "popcorn effect"
     //      the simulation still freaks out at large quantities of objects moving
     //      not running quite as fast as I'd hoped
     //      only supports circles
+    // approximate object limits before FPS drops:
+    //      naive: 1600
+    //      cellularized: 3300
+    //      cell (heap fixed): 5000
+    // won't implement cuz meh:
+    //      resistance
+    //      debug for android wasm
+    //      time warp thingy, including complete stop (divide frame_time before passing to update)
+    //      make everything (or generic?) f64 and compare
+    //      spawned from this: 3d version
+
+    // == TODO: ==
     // fire:
     //      this is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
-    //      add math equation parser with variable input and relevant UI for goofing
-    // implement resistance
-    // learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
-    // game rules (circle constaint (with adjust point gravity), constaint condition (temperature, bounce))
-    // debug for android wasm
-    // time warp thingy, including complete stop (divide frame_time before passing to update)
+    //      heat transfer and loss UI
+    //      accel power UI
     // if last sim frame time < target frame time: disable target frame time
     // better defaults for web
     // (unlocked sim frame time, enabled lower 60 sfps max limit)
     //      #[cfg(target_arch = "wasm32")]
     //      #[cfg(target_os = "unknown")]
-    // simplify highlighting (maybe remove enum_map dependency)
-    // make everything (or generic?) f64 and compare
-    // shaders (fft, fire?)
+    // shaders:
+    //      simplify highlighting (maybe remove enum_map dependency)
+    //      learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
+    //      shader uniforms (verlet_object properties) and presets (fire, maybe water)
     // documentation
-    // spawned from this: 3d version
-    // parametrize stuff
-    //      what color to what color gradient based on what scale of velocity
-    //      temperature of particles (heat loss, temp to vel, color with scale)
-    //      velocity to radius
-    //      constraint type (window, circle, combinations)
+    // parametrize radius to vel/temp/...
     // add presets (maybe need automation):
     //      mixer (cw or ccw shake timed accordingly)
     //      0 grav bowling/pool like stuff 
@@ -52,10 +57,6 @@ async fn main() {
     //      stable density showcase (big go up, shake it up a little)
     //      max objects at different sizes with stable fps
     //      bubbling away (slowly replacing big ones with small ones)
-    // approximate object limits before FPS drops:
-    //      naive: 1600
-    //      cellularized: 3300
-    //      cell (heap fixed): 5000
 
     let mut context: Context = Context::default();
     let mut windows: Windows = Windows::new();
