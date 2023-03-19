@@ -26,6 +26,56 @@ void main() {
 }
 ";
 
+pub const FIRE_FRAGMENT_SHADER: &'static str = "\
+#version 100
+precision lowp float;
+
+// verlet object properties
+uniform lowp vec2 pos_old;
+uniform lowp vec2 pos_curr;
+uniform lowp vec2 acceleration;
+uniform lowp float radius;
+uniform lowp float temperature;
+
+// rendering coordinates (object-space and screen-space)
+varying vec2 uv;
+varying vec3 pos;
+
+void main() {
+    gl_FragColor = vec4(
+        temperature * 3.00,
+        temperature * 0.60,
+        temperature * 0.25,
+        1.0
+    );
+}
+";
+
+pub const WATER_FRAGMENT_SHADER: &'static str = "\
+#version 100
+precision lowp float;
+
+// verlet object properties
+uniform lowp vec2 pos_old;
+uniform lowp vec2 pos_curr;
+uniform lowp vec2 acceleration;
+uniform lowp float radius;
+uniform lowp float temperature;
+
+// rendering coordinates (object-space and screen-space)
+varying vec2 uv;
+varying vec3 pos;
+
+void main() {
+    float vel = distance(pos_old, pos_curr);
+    gl_FragColor = vec4(
+        vec2(vel * 0.3),
+        vel * 0.7,
+        1.0
+    );
+}
+";
+
 pub const DEFAULT_VERTEX_SHADER: &'static str = "\
 #version 100
 precision lowp float;

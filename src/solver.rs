@@ -73,7 +73,7 @@ impl Solver {
             spawn_safety_iterations: 100,
 
             stabilize_on_spawn: false,
-            stabilize_on_oob: false,
+            stabilize_on_oob: true,
 
             min_object_count: 500,
             min_object_count_enforced: false,

@@ -13,6 +13,7 @@ pub struct Windows {
     pub simulation: bool,
     pub shaders: bool,
     pub rules: bool,
+    pub presets: bool,
 }
 
 impl Windows {
@@ -22,6 +23,7 @@ impl Windows {
             simulation: false,
             shaders: false,
             rules: false,
+            presets: false,
         }
     }
 }
@@ -35,6 +37,7 @@ pub fn render(context: &mut Context, windows: &mut Windows) {
                 ui.checkbox(&mut windows.simulation, "Simulation");
                 ui.checkbox(&mut windows.rules, "Rules");
                 ui.checkbox(&mut windows.shaders, "Shaders");
+                ui.checkbox(&mut windows.presets, "Presets");
             });
         egui::Window::new("Controls")
             .open(&mut windows.controls)
@@ -56,6 +59,11 @@ pub fn render(context: &mut Context, windows: &mut Windows) {
             .default_size((600.0, 500.0))
             .show(egui_ctx, |ui| {
                 shaders(ui, context);
+            });
+        egui::Window::new("Presets")
+            .open(&mut windows.presets)
+            .show(egui_ctx, |ui| {
+                presets(ui, context);
             });
     });
 
@@ -347,11 +355,13 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
     ui.separator();
 
     ui.collapsing("Enabled uniforms (FPS drops)", |ui| {
-        ui.checkbox(&mut context.shader_context.use_uniform_pos_old, "pos_old - Old object position");
-        ui.checkbox(&mut context.shader_context.use_uniform_pos_curr, "pos_curr - Current object position");
-        ui.checkbox(&mut context.shader_context.use_uniform_acceleration, "acceleration - Object acceleration");
-        ui.checkbox(&mut context.shader_context.use_uniform_radius, "radius - Object radius");
-        ui.checkbox(&mut context.shader_context.use_uniform_temperature, "temperature - Object temperature");
+        ui.add_enabled_ui(context.shader_context.use_shaders, |ui| {
+            ui.checkbox(&mut context.shader_context.use_uniform_pos_old, "pos_old - Old object position");
+            ui.checkbox(&mut context.shader_context.use_uniform_pos_curr, "pos_curr - Current object position");
+            ui.checkbox(&mut context.shader_context.use_uniform_acceleration, "acceleration - Object acceleration");
+            ui.checkbox(&mut context.shader_context.use_uniform_radius, "radius - Object radius");
+            ui.checkbox(&mut context.shader_context.use_uniform_temperature, "temperature - Object temperature");
+        });
     });
 
     let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
@@ -408,4 +418,44 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
             .code_editor()
             .desired_width(f32::INFINITY)
     );
+}
+
+pub fn presets(ui: &mut egui::Ui, context: &mut Context) {
+    ui.label("Current preset:");
+    ui.code(&context.current_preset_name);
+    ui.separator();
+    ui.label("Basic presets");
+    ui.horizontal(|ui| {
+        if ui.button("Default").on_hover_text("Reset the settings to their default state").clicked() {
+            context.reset();
+        }
+        if ui.button("Web30").on_hover_text("Enforced 30 SFPS for web").clicked() {
+            context.stable_thirty_web_preset();
+        }
+        if ui.button("Web60").on_hover_text("Enforced 60 SFPS for web").clicked() {
+            context.stable_sixty_web_preset();
+        }
+    });
+
+    ui.separator();
+    ui.label("Fun perpetuating presets");
+    ui.horizontal(|ui| {
+        if ui.button("Fire 1").on_hover_text("Set temperature rules and shaders to something that resembles a fire").clicked() {
+            context.fire_preset_one();
+        }
+        if ui.button("Fire 2").on_hover_text("Set temperature rules and shaders to something that resembles a fire").clicked() {
+            context.fire_preset_two();
+        }
+        if ui.button("Rain").on_hover_text("Disable boundaries and set minimal object limit, shader based on velocity").clicked() {
+            context.rain_preset();
+        }
+    });
+
+    ui.separator();
+    ui.label("Fun one-time presets");
+    ui.horizontal(|ui| {
+        if ui.button("Bowling/Pool").on_hover_text("No gravity and boundaries, spawn an object next to another to make them bounce").clicked() {
+            context.bowling_pool_preset();
+        }
+    });
 }

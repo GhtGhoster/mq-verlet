@@ -34,26 +34,13 @@ async fn main() {
     //      spawned from this: 3d version
     //      the fire is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
     //      learn how to use shaders more effectively (water shader in the book, passing in whole textures etc) - screen reading shaders
+    //      mixer (cw or ccw shake timed accordingly)
+    //      auto shaking (with looping over stuff and bpm/settable delay per shake)
 
     // == TODO: ==
     // if last sim frame time < target frame time: disable target frame time
-    // better defaults for web (different computers have different screen refresh rates in web)
-    // (unlocked sim frame time, enabled lower 60 sfps max limit)
-    //      #[cfg(target_arch = "wasm32")]
-    //      #[cfg(target_os = "unknown")]
-    // shaders:
-    //      shader presets (fire, maybe water - temperature, velocity, ...)
-    // documentation
-    // parametrize radius to vel/temp/...
-    // add presets (maybe need automation):
-    //      mixer (cw or ccw shake timed accordingly)
-    //      0 grav bowling/pool like stuff 
-    //      auto shaking (with looping over stuff and bpm/settable delay per shake)
-    //      rain chaos (min 1001, max 1000)
-    //      stable preset for window resize playing
-    //      stable density showcase (big go up, shake it up a little)
-    //      max objects at different sizes with stable fps
-    //      bubbling away (slowly replacing big ones with small ones)
+    // stable density showcase (big go up, shake it up a little)
+    // add presets (needs automation):
 
     let mut context: Context = Context::default();
     let mut windows: Windows = Windows::new();
