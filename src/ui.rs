@@ -343,6 +343,14 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
 
     ui.separator();
 
+    ui.collapsing("Enabled uniforms (FPS drops)", |ui| {
+        ui.checkbox(&mut context.use_uniform_pos_old, "pos_old - Old object position");
+        ui.checkbox(&mut context.use_uniform_pos_curr, "pos_curr - Current object position");
+        ui.checkbox(&mut context.use_uniform_acceleration, "acceleration - Object acceleration");
+        ui.checkbox(&mut context.use_uniform_radius, "radius - Object radius");
+        ui.checkbox(&mut context.use_uniform_temperature, "temperature - Object temperature");
+    });
+
     let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
         let mut layout_job =
             crate::syntax_highlighting::highlight(ui.ctx(), &CodeTheme::dark(), string, "glsl");

@@ -27,11 +27,21 @@ pub fn render(context: &mut Context) {
         } else {
 
             if context.use_shaders {
-                context.material.set_uniform("pos_old", verlet_object.position_old.as_tuple());
-                context.material.set_uniform("pos_curr", verlet_object.position_current.as_tuple());
-                context.material.set_uniform("acceleration", verlet_object.acceleration.as_tuple());
-                context.material.set_uniform("radius", verlet_object.radius);
-                context.material.set_uniform("temperature", verlet_object.temperature);
+                if context.use_uniform_pos_old {
+                    context.material.set_uniform("pos_old", verlet_object.position_old.as_tuple());
+                }
+                if context.use_uniform_pos_curr {
+                    context.material.set_uniform("pos_curr", verlet_object.position_current.as_tuple());
+                }
+                if context.use_uniform_acceleration {
+                    context.material.set_uniform("acceleration", verlet_object.acceleration.as_tuple());
+                }
+                if context.use_uniform_radius {
+                    context.material.set_uniform("radius", verlet_object.radius);
+                }
+                if context.use_uniform_temperature {
+                    context.material.set_uniform("temperature", verlet_object.temperature);
+                }
             }
 
             draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.5));

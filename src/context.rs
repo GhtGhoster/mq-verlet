@@ -80,6 +80,13 @@ pub struct Context {
     pub shake_intensity: f32,
     pub shake_direction: f32,
 
+    // shader uniforms usage
+    pub use_uniform_pos_old: bool,
+    pub use_uniform_pos_curr: bool,
+    pub use_uniform_acceleration: bool,
+    pub use_uniform_radius: bool,
+    pub use_uniform_temperature: bool,
+
     // shader variables
     pub use_shaders: bool,
     pub auto_reload_shaders: bool,
@@ -127,7 +134,13 @@ impl Context {
             shake_auto_random: false,
             shake_intensity: 100_000.0,
             shake_direction: 90.0,
-            
+
+            use_uniform_pos_old: false,
+            use_uniform_pos_curr: false,
+            use_uniform_acceleration: false,
+            use_uniform_radius: false,
+            use_uniform_temperature: false,
+
             use_shaders: false,
             auto_reload_shaders: true,
 
