@@ -42,6 +42,9 @@ pub struct Solver {
     pub apply_temperature_right: f32,
 
     pub accelerate_on_temperature: bool,
+    pub temperature_acceleration_power: f32,
+    pub heat_transfer_factor: f32,
+    pub heat_loss_factor: f32,
 }
 
 impl Solver {
@@ -93,6 +96,9 @@ impl Solver {
             apply_temperature_right: 0.0,
 
             accelerate_on_temperature: false,
+            temperature_acceleration_power: 4.0,
+            heat_transfer_factor: 0.01,
+            heat_loss_factor: 2.0,
         }
     }
 
@@ -190,7 +196,8 @@ impl Solver {
     pub fn update_positions(&mut self, dt: f32) {
         for obj in self.verlet_objects.iter_mut() {
             obj.update_position(dt);
-            obj.temperature *= 0f32.max(1.0 - (dt*2.0));
+            // heatloss
+            obj.temperature *= 0f32.max(1.0 - (dt*self.heat_loss_factor));
         }
     }
 
@@ -198,7 +205,7 @@ impl Solver {
         for obj in self.verlet_objects.iter_mut() {
             obj.accelerate(self.gravity);
             if self.accelerate_on_temperature {
-                obj.accelerate(self.gravity * -0f32.max((obj.temperature+1.0).powf(4.0) - 1.0));
+                obj.accelerate(self.gravity * -0f32.max((obj.temperature+1.0).powf(self.temperature_acceleration_power) - 1.0));
             }
         }
     }
@@ -339,10 +346,9 @@ impl Solver {
             self.verlet_objects[obj_index_1].position_current += n * 0.5 * delta;
             self.verlet_objects[obj_index_2].position_current -= n * 0.5 * delta;
 
-            let tmp_diff = ((self.verlet_objects[obj_index_1].temperature - self.verlet_objects[obj_index_2].temperature) / 2.0) * 0.01;
+            let tmp_diff = ((self.verlet_objects[obj_index_1].temperature - self.verlet_objects[obj_index_2].temperature) / 2.0) * self.heat_transfer_factor;
             self.verlet_objects[obj_index_1].temperature -= tmp_diff;
             self.verlet_objects[obj_index_2].temperature += tmp_diff;
-            
         }
     }
 

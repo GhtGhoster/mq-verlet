@@ -270,22 +270,30 @@ pub fn rules(ui: &mut egui::Ui, context: &mut Context) {
     ui.collapsing("Temperature", |ui| {
         ui.checkbox(&mut context.solver.accelerate_on_temperature, "Accelerate against gravity based on temperature");
         ui.label("Acceleration applied:");
-        ui.code("gravity * -max(0, (temperature + 1) ^ 4 - 1)");
-        ui.separator();
+        ui.code("gravity * -max(0, (temperature + 1) ^ x - 1)");
+        ui.label("Where x is the following factor:");
         ui.add_enabled(
             context.solver.accelerate_on_temperature,
+            egui::Slider::new(&mut context.solver.temperature_acceleration_power, 0.0..=10.0).text("Acceleration factor")
+        );
+        ui.separator();
+        ui.add(
+            egui::Slider::new(&mut context.solver.heat_transfer_factor, 0.0..=1.0).text("Heat transfer factor")
+        );
+        ui.add(
+            egui::Slider::new(&mut context.solver.heat_loss_factor, 0.0..=10.0).text("Heat loss factor")
+        );
+        ui.separator();
+        ui.add(
             egui::Slider::new(&mut context.solver.apply_temperature_bottom, 0.0..=1.0).text("Apply bottom temperature")
         );
-        ui.add_enabled(
-            context.solver.accelerate_on_temperature,
+        ui.add(
             egui::Slider::new(&mut context.solver.apply_temperature_top, 0.0..=1.0).text("Apply top temperature")
         );
-        ui.add_enabled(
-            context.solver.accelerate_on_temperature,
+        ui.add(
             egui::Slider::new(&mut context.solver.apply_temperature_left, 0.0..=1.0).text("Apply left temperature")
         );
-        ui.add_enabled(
-            context.solver.accelerate_on_temperature,
+        ui.add(
             egui::Slider::new(&mut context.solver.apply_temperature_right, 0.0..=1.0).text("Apply right temperature")
         );
     });

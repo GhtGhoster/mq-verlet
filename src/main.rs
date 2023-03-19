@@ -25,27 +25,25 @@ async fn main() {
     //      naive: 1600
     //      cellularized: 3300
     //      cell (heap fixed): 5000
-    // won't implement cuz meh:
+    // won't implement cuz CBA:
     //      resistance
     //      debug for android wasm
     //      time warp thingy, including complete stop (divide frame_time before passing to update)
     //      make everything (or generic?) f64 and compare
     //      spawned from this: 3d version
+    //      the fire is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
+    //      learn how to use shaders more effectively (water shader in the book, passing in whole textures etc) - screen reading shaders
 
     // == TODO: ==
-    // fire:
-    //      this is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
-    //      heat transfer and loss UI
-    //      accel power UI
     // if last sim frame time < target frame time: disable target frame time
-    // better defaults for web
+    // better defaults for web (different computers have different screen refresh rates in web)
     // (unlocked sim frame time, enabled lower 60 sfps max limit)
     //      #[cfg(target_arch = "wasm32")]
     //      #[cfg(target_os = "unknown")]
     // shaders:
-    //      simplify highlighting (maybe remove enum_map dependency)
-    //      learn how to use shaders more effectively (water shader in the book, passing in whole textures etc)
-    //      shader uniforms (verlet_object properties) and presets (fire, maybe water)
+    //      optimize shader UI (set only certain necessary uniforms)
+    //      simplify highlighting (maybe remove enum_map dependency) (also fix 9 random errors through which this still compiles??)
+    //      shader presets (fire, maybe water - temperature, velocity, ...)
     // documentation
     // parametrize radius to vel/temp/...
     // add presets (maybe need automation):

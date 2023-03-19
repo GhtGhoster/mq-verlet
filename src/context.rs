@@ -7,13 +7,24 @@ pub const DEFAULT_FRAGMENT_SHADER: &'static str = "\
 #version 100
 precision lowp float;
 
-uniform lowp vec4 kekw;
+// verlet object properties
+uniform lowp vec2 pos_old;
+uniform lowp vec2 pos_curr;
+uniform lowp vec2 acceleration;
+uniform lowp float radius;
+uniform lowp float temperature;
 
+// rendering coordinates (object-space and screen-space)
 varying vec2 uv;
 varying vec3 pos;
 
 void main() {
-    gl_FragColor = vec4(1.0-(pos.y+pos.x)/2.0, 1.0-pos.x, 1.0-pos.y, 1.0);
+    gl_FragColor = vec4(
+        -pos.x-pos.y,
+        0.5-abs(pos.x)+pos.y/2.0,
+        pos.x-pos.y,
+        1.0
+    );
 }
 ";
 
@@ -85,7 +96,13 @@ pub struct Context {
 impl Context {
     pub fn default() -> Self {
         let pipeline_params: PipelineParams = PipelineParams::default();
-        let uniforms: Vec<(String, UniformType)> = vec![];
+        let uniforms: Vec<(String, UniformType)> = vec![
+            ("pos_curr".to_string(), UniformType::Float2),
+            ("pos_old".to_string(), UniformType::Float2),
+            ("acceleration".to_string(), UniformType::Float2),
+            ("radius".to_string(), UniformType::Float1),
+            ("temperature".to_string(), UniformType::Float1),
+        ];
         Self {
             solver: Solver::new(),
 

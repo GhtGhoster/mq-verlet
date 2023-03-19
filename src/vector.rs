@@ -22,6 +22,10 @@ impl Vec2 {
     pub fn is_nan(&self) -> bool {
         self.x.is_nan() || self.y.is_nan()
     }
+
+    pub fn as_tuple(&self) -> (f32, f32) {
+        (self.x, self.y)
+    }
 }
 
 impl Sub for Vec2 {
