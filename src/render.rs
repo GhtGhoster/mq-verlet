@@ -9,13 +9,13 @@ pub fn render(context: &mut Context) {
     let mut oob_text: Vec<String> = vec![];
 
     // shaders
-    if context.use_shaders {
+    if context.shader_context.use_shaders {
         set_camera(&Camera2D {
             zoom: vec2(2.0/screen_width(), -2.0/screen_height()),
             target: vec2(screen_width()/2.0, screen_height()/2.0),
             ..Default::default()
         });
-        gl_use_material(context.material);
+        gl_use_material(context.shader_context.material);
     }
 
     // object rendering
@@ -26,21 +26,21 @@ pub fn render(context: &mut Context) {
             oob_text.push(format!("OOB: [{}, {}]", x, y));
         } else {
 
-            if context.use_shaders {
-                if context.use_uniform_pos_old {
-                    context.material.set_uniform("pos_old", verlet_object.position_old.as_tuple());
+            if context.shader_context.use_shaders {
+                if context.shader_context.use_uniform_pos_old {
+                    context.shader_context.material.set_uniform("pos_old", verlet_object.position_old.as_tuple());
                 }
-                if context.use_uniform_pos_curr {
-                    context.material.set_uniform("pos_curr", verlet_object.position_current.as_tuple());
+                if context.shader_context.use_uniform_pos_curr {
+                    context.shader_context.material.set_uniform("pos_curr", verlet_object.position_current.as_tuple());
                 }
-                if context.use_uniform_acceleration {
-                    context.material.set_uniform("acceleration", verlet_object.acceleration.as_tuple());
+                if context.shader_context.use_uniform_acceleration {
+                    context.shader_context.material.set_uniform("acceleration", verlet_object.acceleration.as_tuple());
                 }
-                if context.use_uniform_radius {
-                    context.material.set_uniform("radius", verlet_object.radius);
+                if context.shader_context.use_uniform_radius {
+                    context.shader_context.material.set_uniform("radius", verlet_object.radius);
                 }
-                if context.use_uniform_temperature {
-                    context.material.set_uniform("temperature", verlet_object.temperature);
+                if context.shader_context.use_uniform_temperature {
+                    context.shader_context.material.set_uniform("temperature", verlet_object.temperature);
                 }
             }
 
@@ -50,13 +50,13 @@ pub fn render(context: &mut Context) {
     }
 
     // shader clean up
-    if context.use_shaders {
+    if context.shader_context.use_shaders {
         set_default_camera();
         gl_use_default_material();
     }
 
     // oob object rendering (text)
-    if !context.use_shaders {
+    if !context.shader_context.use_shaders {
         for (i, text) in oob_text.iter().enumerate() {
             draw_text(text, 0.0, 20.0 * i as f32, 20., RED);
         }

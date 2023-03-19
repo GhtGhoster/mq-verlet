@@ -12,6 +12,7 @@ mod ui;
 mod context;
 mod render;
 mod syntax_highlighting;
+mod shaders;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
@@ -41,8 +42,6 @@ async fn main() {
     //      #[cfg(target_arch = "wasm32")]
     //      #[cfg(target_os = "unknown")]
     // shaders:
-    //      optimize shader UI (set only certain necessary uniforms)
-    //      simplify highlighting (maybe remove enum_map dependency) (also fix 9 random errors through which this still compiles??)
     //      shader presets (fire, maybe water - temperature, velocity, ...)
     // documentation
     // parametrize radius to vel/temp/...

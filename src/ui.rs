@@ -1,5 +1,5 @@
 
-use crate::{context::{self, Context}, syntax_highlighting::CodeTheme};
+use crate::{shaders, context::Context, syntax_highlighting::CodeTheme};
 use macroquad::prelude::*;
 use ::rand::{rngs::ThreadRng, thread_rng, Rng};
 
@@ -315,27 +315,30 @@ pub fn rules(ui: &mut egui::Ui, context: &mut Context) {
 
 pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
     if cfg!(target_arch = "wasm32") && cfg!(target_os = "unknown") {
-        ui.checkbox(&mut context.use_shaders, "Use shaders (WARNING!)")
+        ui.checkbox(&mut context.shader_context.use_shaders, "Use shaders (WARNING!)")
             .on_hover_ui(|ui| {
                     ui.label("(Warning: Don't paste (Ctrl+V) anything into these text boxes else the website crashes)");
             });
     } else {
-        ui.checkbox(&mut context.use_shaders, "Use shaders");
+        ui.checkbox(&mut context.shader_context.use_shaders, "Use shaders");
     }
 
     ui.separator();
     ui.horizontal(|ui| {
-        ui.add_enabled_ui(context.use_shaders, |ui| {
+        ui.add_enabled_ui(context.shader_context.use_shaders, |ui| {
             if ui.button("Reload shaders").clicked() {
-                context.reload_shaders();
+                context.shader_context.reload_shaders();
             }
             if ui.button("Reset to default").clicked() {
-                context.vertex_shader = context::DEFAULT_VERTEX_SHADER.to_string();
-                context.fragment_shader = context::DEFAULT_FRAGMENT_SHADER.to_string();
+                context.shader_context.vertex_shader = shaders::DEFAULT_VERTEX_SHADER.to_string();
+                context.shader_context.fragment_shader = shaders::DEFAULT_FRAGMENT_SHADER.to_string();
+                if context.shader_context.auto_reload_shaders {
+                    context.shader_context.reload_shaders();
+                }
             }
-            if ui.checkbox(&mut context.auto_reload_shaders, "Reload automatically on change").clicked() {
-                if context.auto_reload_shaders {
-                    context.reload_shaders();
+            if ui.checkbox(&mut context.shader_context.auto_reload_shaders, "Reload automatically on change").clicked() {
+                if context.shader_context.auto_reload_shaders {
+                    context.shader_context.reload_shaders();
                 }
             }
         });
@@ -344,34 +347,34 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
     ui.separator();
 
     ui.collapsing("Enabled uniforms (FPS drops)", |ui| {
-        ui.checkbox(&mut context.use_uniform_pos_old, "pos_old - Old object position");
-        ui.checkbox(&mut context.use_uniform_pos_curr, "pos_curr - Current object position");
-        ui.checkbox(&mut context.use_uniform_acceleration, "acceleration - Object acceleration");
-        ui.checkbox(&mut context.use_uniform_radius, "radius - Object radius");
-        ui.checkbox(&mut context.use_uniform_temperature, "temperature - Object temperature");
+        ui.checkbox(&mut context.shader_context.use_uniform_pos_old, "pos_old - Old object position");
+        ui.checkbox(&mut context.shader_context.use_uniform_pos_curr, "pos_curr - Current object position");
+        ui.checkbox(&mut context.shader_context.use_uniform_acceleration, "acceleration - Object acceleration");
+        ui.checkbox(&mut context.shader_context.use_uniform_radius, "radius - Object radius");
+        ui.checkbox(&mut context.shader_context.use_uniform_temperature, "temperature - Object temperature");
     });
 
     let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
         let mut layout_job =
-            crate::syntax_highlighting::highlight(ui.ctx(), &CodeTheme::dark(), string, "glsl");
+            crate::syntax_highlighting::highlight(ui.ctx(), &CodeTheme::default(), string, "glsl");
         layout_job.wrap.max_width = wrap_width;
         ui.fonts(|f| f.layout_job(layout_job))
     };
     
     ui.collapsing("Fragment shader", |ui| {
-        ui.add_enabled_ui(context.use_shaders, |ui| {
+        ui.add_enabled_ui(context.shader_context.use_shaders, |ui| {
             egui::ScrollArea::vertical()
             .id_source("fragment_scroll_area")
             .show(ui, |ui| {
                 if ui.add(
-                    egui::TextEdit::multiline(&mut context.fragment_shader)
+                    egui::TextEdit::multiline(&mut context.shader_context.fragment_shader)
                         .code_editor()
                         .desired_rows(20)
                         .desired_width(f32::INFINITY)
                         .layouter(&mut layouter)
                 ).changed() {
-                    if context.auto_reload_shaders {
-                        context.reload_shaders();
+                    if context.shader_context.auto_reload_shaders {
+                        context.shader_context.reload_shaders();
                     }
                 }
             });
@@ -379,19 +382,19 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
     });
 
     ui.collapsing("Vertex shader", |ui| {
-        ui.add_enabled_ui(context.use_shaders, |ui| {
+        ui.add_enabled_ui(context.shader_context.use_shaders, |ui| {
             egui::ScrollArea::vertical()
                 .id_source("vertext_scroll_area")
                 .show(ui, |ui| {
                     if ui.add(
-                        egui::TextEdit::multiline(&mut context.vertex_shader)
+                        egui::TextEdit::multiline(&mut context.shader_context.vertex_shader)
                             .code_editor()
                             .desired_rows(20)
                             .desired_width(f32::INFINITY)
                             .layouter(&mut layouter)
                     ).changed() {
-                        if context.auto_reload_shaders {
-                            context.reload_shaders();
+                        if context.shader_context.auto_reload_shaders {
+                            context.shader_context.reload_shaders();
                         }
                     }
                 });
@@ -401,7 +404,7 @@ pub fn shaders(ui: &mut egui::Ui, context: &mut Context) {
     ui.separator();
     ui.label("Shader compilation error message:");
     ui.add_enabled(false, 
-        egui::TextEdit::multiline(&mut context.shader_error)
+        egui::TextEdit::multiline(&mut context.shader_context.shader_error)
             .code_editor()
             .desired_width(f32::INFINITY)
     );

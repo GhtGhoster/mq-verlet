@@ -43,12 +43,6 @@ pub struct CodeTheme {
 
 impl Default for CodeTheme {
     fn default() -> Self {
-        Self::dark()
-    }
-}
-
-impl CodeTheme {
-    pub fn dark() -> Self {
         let font_id = egui::FontId::monospace(10.0);
         use egui::{Color32, TextFormat};
         Self {

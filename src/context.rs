@@ -2,51 +2,7 @@
 use macroquad::prelude::*;
 
 use crate::solver::Solver;
-
-pub const DEFAULT_FRAGMENT_SHADER: &'static str = "\
-#version 100
-precision lowp float;
-
-// verlet object properties
-uniform lowp vec2 pos_old;
-uniform lowp vec2 pos_curr;
-uniform lowp vec2 acceleration;
-uniform lowp float radius;
-uniform lowp float temperature;
-
-// rendering coordinates (object-space and screen-space)
-varying vec2 uv;
-varying vec3 pos;
-
-void main() {
-    gl_FragColor = vec4(
-        -pos.x-pos.y,
-        0.5-abs(pos.x)+pos.y/2.0,
-        pos.x-pos.y,
-        1.0
-    );
-}
-";
-
-pub const DEFAULT_VERTEX_SHADER: &'static str = "\
-#version 100
-precision lowp float;
-
-attribute vec3 position;
-attribute vec2 texcoord;
-
-varying vec2 uv;
-varying vec3 pos;
-
-uniform mat4 Model;
-uniform mat4 Projection;
-
-void main() {
-    gl_Position = Projection * Model * vec4(position, 1);
-    uv = texcoord;
-    pos = gl_Position.xyz;
-}
-";
+use crate::shaders::ShaderContext;
 
 pub struct Context {
     pub solver: Solver,
@@ -80,36 +36,12 @@ pub struct Context {
     pub shake_intensity: f32,
     pub shake_direction: f32,
 
-    // shader uniforms usage
-    pub use_uniform_pos_old: bool,
-    pub use_uniform_pos_curr: bool,
-    pub use_uniform_acceleration: bool,
-    pub use_uniform_radius: bool,
-    pub use_uniform_temperature: bool,
-
-    // shader variables
-    pub use_shaders: bool,
-    pub auto_reload_shaders: bool,
-
-    pub fragment_shader: String,
-    pub vertex_shader: String,
-    pipeline_params: PipelineParams,
-    uniforms: Vec<(String, UniformType)>,
-    pub material: Material,
-    pub shader_error: String,
-
+    // shaders
+    pub shader_context: ShaderContext,
 }
 
 impl Context {
     pub fn default() -> Self {
-        let pipeline_params: PipelineParams = PipelineParams::default();
-        let uniforms: Vec<(String, UniformType)> = vec![
-            ("pos_curr".to_string(), UniformType::Float2),
-            ("pos_old".to_string(), UniformType::Float2),
-            ("acceleration".to_string(), UniformType::Float2),
-            ("radius".to_string(), UniformType::Float1),
-            ("temperature".to_string(), UniformType::Float1),
-        ];
         Self {
             solver: Solver::new(),
 
@@ -135,50 +67,7 @@ impl Context {
             shake_intensity: 100_000.0,
             shake_direction: 90.0,
 
-            use_uniform_pos_old: false,
-            use_uniform_pos_curr: false,
-            use_uniform_acceleration: false,
-            use_uniform_radius: false,
-            use_uniform_temperature: false,
-
-            use_shaders: false,
-            auto_reload_shaders: true,
-
-            fragment_shader: DEFAULT_FRAGMENT_SHADER.to_string(),
-            vertex_shader: DEFAULT_VERTEX_SHADER.to_string(),
-            pipeline_params,
-            uniforms: uniforms.clone(),
-            material: load_material(
-                &DEFAULT_VERTEX_SHADER.to_string(),
-                &DEFAULT_FRAGMENT_SHADER.to_string(),
-                MaterialParams {
-                    uniforms: uniforms.clone(),
-                    pipeline_params,
-                    textures: vec![],
-                },
-            ).unwrap(),
-            shader_error: String::new(),
-        }
-    }
-
-    pub fn reload_shaders(&mut self) {
-        match load_material(
-            self.vertex_shader.as_str(),
-            self.fragment_shader.as_str(),
-            MaterialParams {
-                uniforms: self.uniforms.clone(),
-                pipeline_params: self.pipeline_params,
-                textures: vec![],
-            },
-        ) {
-            Ok(mat) => {
-                self.material.delete();
-                self.material = mat;
-                self.shader_error = String::new();
-            },
-            Err(error) => {
-                self.shader_error = error.to_string();
-            },
+            shader_context: ShaderContext::default(),
         }
     }
 }
