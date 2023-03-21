@@ -76,6 +76,29 @@ void main() {
 }
 ";
 
+pub const DENSITY_FRAGMENT_SHADER: &'static str = "\
+#version 100
+precision lowp float;
+
+// verlet object properties
+uniform lowp vec2 pos_old;
+uniform lowp vec2 pos_curr;
+uniform lowp vec2 acceleration;
+uniform lowp float radius;
+uniform lowp float temperature;
+
+// rendering coordinates (object-space and screen-space)
+varying vec2 uv;
+varying vec3 pos;
+
+void main() {
+    gl_FragColor = vec4(
+        vec3(radius / 15.0),
+        1.0
+    );
+}
+";
+
 pub const DEFAULT_VERTEX_SHADER: &'static str = "\
 #version 100
 precision lowp float;

@@ -2,7 +2,7 @@
 use macroquad::prelude::*;
 
 use crate::solver::Solver;
-use crate::shaders::{ShaderContext, FIRE_FRAGMENT_SHADER, WATER_FRAGMENT_SHADER};
+use crate::shaders::{ShaderContext, FIRE_FRAGMENT_SHADER, WATER_FRAGMENT_SHADER, DENSITY_FRAGMENT_SHADER};
 use crate::vector;
 
 pub struct Context {
@@ -128,7 +128,7 @@ impl Context {
 
     pub fn fire_preset_two(&mut self) {
         self.fire_preset_one();
-        self.solver.gravity.y = 6_000.0;
+        self.solver.gravity.y = 4_000.0;
         self.solver.temperature_acceleration_power = 3.0;
         self.current_preset_name = "Fire 2".to_string();
     }
@@ -180,5 +180,22 @@ impl Context {
         self.solver.spawn(vector::Vec2{x: screen_width() - 200.0 - horizontal_spacing*2.0, y: mid_y - 60.0});
 
         self.solver.spawn(vector::Vec2{x: screen_width() - 200.0 - horizontal_spacing*3.0, y: mid_y});
+    }
+
+    pub fn density_preset(&mut self) {
+        self.reset();
+        self.solver.spawn_radius = 20.0;
+        self.solver.spawn_count(100);
+        self.solver.spawn_radius = 10.0;
+        self.solver.spawn_count(400);
+        self.solver.spawn_radius = 5.0;
+        self.solver.spawn_count(1000);
+        self.shader_context.material.delete();
+        self.shader_context = ShaderContext::default();
+        self.shader_context.use_shaders = true;
+        self.shader_context.use_uniform_radius = true;
+        self.shader_context.fragment_shader = DENSITY_FRAGMENT_SHADER.to_string();
+        self.shader_context.reload_shaders();
+        self.current_preset_name = "Density".to_string();
     }
 }

@@ -7,6 +7,13 @@ A Verlet solver based on
 The purpose of this project is to familiarize myself with simple physics
 simulations, shaders, and using `egui` and `macroquad` crates.
 
+Presets are made with a fullscreen or near fullscreen window at FHD resolution in mind.
+
+This code is undocumented as it was an exploratory project with me having
+very little to no idea of what I was doing as I was doing it. Even so,
+the code should be structured relatively nicely, hopefully enough so
+that it's readable and undestandable without excessive headaches.
+
 More interesting crates to look out for in the future:
 - [`quad-storage`](https://crates.io/crates/quad-storage)
 - [`quad-url`](https://crates.io/crates/quad-url)
@@ -15,6 +22,40 @@ Be advised that `egui-miniquad`'s dependency `quad-url` relies on an old,
 [vulnerable](https://github.com/advisories/GHSA-m589-mv4q-p7rj)
 version of `webbrowser` and neither me nor GitHub's Dependabot can fix it.
 This isn't actually used in code anywhere but be careful.
+
+## Limits and issues:
+
+Approximate object limits before FPS drops (mileage may vary):
+- Naive (every object against every other object): 1600
+- Cellularized (matrix/cell-based optimization): 3300
+- Optimized heap usage: 5000
+
+Few glaring issue of the simulation:
+- The optimization cell block size has to be quite a bit larger than the object
+  given a homogenous obj size due to "popcorn effect"
+- The simulation still freaks out at large quantities of objects moving
+- Not running quite as fast as I'd hoped
+- Only supports circles
+- Relying on shaders and passing in uniforms to render anything but monochrome
+  circles is slow
+- When running this natively without target SFPS enabled, at very high
+  frame-ratesthe simulation freaks out. (Pressumably because of f32 rounding error)
+
+## Plans and features that didn't make it
+
+- resistance
+- making wasm work for android
+- time warp thingy, including complete stop (adjust frame_time before
+  passing to update)
+- make everything f64 (or generic?) and compare performance
+- spawned from this: 3d version
+- the fire is about as good as I can get it, maybe try removing temperature
+  based on how much the object traveled since last frame
+- learn how to use shaders more effectively (water shader in the book, passing
+  in whole textures etc) - screen reading shaders
+- auto shaking (with looping over stuff and bpm/settable delay per shake)
+- mixer (cw or ccw shake timed accordingly)
+- if last sim frame time < target frame time: disable target frame time
 
 ## Instructions and dependencies:
 

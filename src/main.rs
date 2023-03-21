@@ -16,32 +16,6 @@ mod shaders;
 
 #[macroquad::main("mq-verlet")]
 async fn main() {
-    // == MOVE TO README ==
-    // few glaring issue of the simulation:
-    //      the optimization cell block size has to be quite a bit larger than the object given a homogenous obj size due to "popcorn effect"
-    //      the simulation still freaks out at large quantities of objects moving
-    //      not running quite as fast as I'd hoped
-    //      only supports circles
-    // approximate object limits before FPS drops:
-    //      naive: 1600
-    //      cellularized: 3300
-    //      cell (heap fixed): 5000
-    // won't implement cuz CBA:
-    //      resistance
-    //      debug for android wasm
-    //      time warp thingy, including complete stop (divide frame_time before passing to update)
-    //      make everything (or generic?) f64 and compare
-    //      spawned from this: 3d version
-    //      the fire is about as good as I can get it, maybe try removing temperature based on how much the object traveled since last frame
-    //      learn how to use shaders more effectively (water shader in the book, passing in whole textures etc) - screen reading shaders
-    //      mixer (cw or ccw shake timed accordingly)
-    //      auto shaking (with looping over stuff and bpm/settable delay per shake)
-
-    // == TODO: ==
-    // if last sim frame time < target frame time: disable target frame time
-    // stable density showcase (big go up, shake it up a little)
-    // add presets (needs automation):
-
     let mut context: Context = Context::default();
     let mut windows: Windows = Windows::new();
     let mut last_frame: f64 = get_time();

@@ -457,5 +457,8 @@ pub fn presets(ui: &mut egui::Ui, context: &mut Context) {
         if ui.button("Bowling/Pool").on_hover_text("No gravity and boundaries, spawn an object next to another to make them bounce").clicked() {
             context.bowling_pool_preset();
         }
+        if ui.button("Density showcase").on_hover_text("Spawn objects of multiple diameters to showcase density").clicked() {
+            context.density_preset();
+        }
     });
 }

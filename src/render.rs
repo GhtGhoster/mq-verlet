@@ -45,7 +45,6 @@ pub fn render(context: &mut Context) {
             }
 
             draw_circle(x, y, r, Color::new(1.0, 1.0, 1.0, 0.5));
-            // draw_circle(x, y, r, temperature_to_color(t));
         }
     }
 
