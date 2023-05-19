@@ -65,13 +65,6 @@ PowerShell (v6+ not required) as well as bash for Linux (scripts are polyglot)
 (The bash portion of the polyglot scripts is untested, use with caution
 and please report back with results or a pull request)
 
-### [`rename.ps1`](rename.ps1)
-This script changes the internal name of the project in the files
-[`src\main.rs`](src\main.rs),
-[`Cargo.toml`](Cargo.toml), and
-[`index.html`](index.html)
-to match the name of the repository, and allows `cargo` to work correctly.
-
 (This is only necessary to run once after a repository was first created with the
 [`mq-wbg-template`](https://github.com/GhtGhoster/mq-wbg-template) template.) 
 
