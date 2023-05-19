@@ -76,8 +76,10 @@ to match the name of the repository, and allows `cargo` to work correctly.
 [`mq-wbg-template`](https://github.com/GhtGhoster/mq-wbg-template) template.) 
 
 ### [`setup.ps1`](setup.ps1)
-This script installs `wasm-bindgen-cli`, `basic-http-server`
+This script installs `wasm-bindgen-cli` (version 0.2.84), `basic-http-server`
 and adds `wasm32-unknown-unknown` to possible compilation targets.
+Note that this version of `wasm-bindgen-cli` is required for the pipeline
+defined in this repository.
 
 (This is only necessary to run once on a single computer as the effects
 of this script are global.)

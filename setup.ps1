@@ -1,4 +1,4 @@
-cargo install wasm-bindgen-cli
+cargo install -f wasm-bindgen-cli@0.2.84
 
 cargo install basic-http-server
 
